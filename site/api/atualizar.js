@@ -25,6 +25,9 @@ module.exports = async (req, res) => {
     const run = await ultima();
     if (req.method === 'POST') {
       if (run && run.status !== 'completed') return res.status(202).json({ rodando: true, run });
+      // intervalo mínimo entre pedidos, para ninguém gastar a cota do GitHub apertando o botão em sequência
+      const desde = run ? (Date.now() - Date.parse(run.fim)) / 60000 : Infinity;
+      if (desde < 30) return res.status(429).json({ erro: `Os dados foram atualizados há ${Math.round(desde)} min. Dá para pedir de novo em ${Math.ceil(30 - desde)} min.` });
       await gh(`/actions/workflows/${WF}/dispatches`, { method: 'POST', body: JSON.stringify({ ref: 'main' }), headers: { 'Content-Type': 'application/json' } });
       return res.status(202).json({ rodando: true, disparado: true });
     }
