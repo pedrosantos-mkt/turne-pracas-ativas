@@ -42,7 +42,7 @@ for c in d['cidades']:
     cls_='qual' if re.search(r'CP[23]',O) else 'desq' if 'CP1' in O else 'semcp'
     a=attribute((x['contact'].get('email') or '').lower().strip(),code,x['dates']['confirmed_at']) or {'tag':'Sem UTM','page':'(sem formulário)','cre':None}
     for bucket,key in ((pub,a['tag']),(pag,FIXP(a['page'])))+(((cre,a['cre']),) if a['cre'] else ()):
-      bucket[key]['ing']+=qty; bucket[key]['vendas']+=1; bucket[key][cls_]+=qty
+      bucket[key]['ing']+=qty; bucket[key]['vendas']+=1; bucket[key][cls_]+=1
   ordem=['Quente','Frio','Mix validados','Sem tag','Sem UTM']
   MP=json.load(open('raw/metricas_publico.json')).get(code,{})
   f_=lambda x,k,d=1: round(float(x[k])/d,6) if x.get(k) not in (None,'') else None

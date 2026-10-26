@@ -185,6 +185,7 @@ td:first-child{max-width:520px;color:var(--fg);font-size:12px}
 tr:last-child td{border-bottom:0}
 .st{font-size:10px;font-weight:800;letter-spacing:.08em;padding:3px 6px;border-radius:4px;margin-right:8px}
 .st.on{background:rgba(var(--ok-rgb),.15);color:var(--ok)} .st.off{background:var(--line-soft);color:var(--faint)}
+tr.camp-extra td{color:var(--muted)} tr.camp-tot td{font-weight:800;border-top:1px solid var(--line)}
 
 table.grid-t{min-width:920px}
 table.grid-t th.grp{text-align:center;color:var(--faint);font-size:10px;border-bottom:1px solid var(--line-soft)}
@@ -234,7 +235,7 @@ footer{margin-top:28px;font-size:12px;color:var(--faint);line-height:1.6;max-wid
   <footer>
     Investimento, impressões, cliques, visitas e checkouts vêm do Meta Ads (conta Máquina de Vendas), somando todas as campanhas de compra da praça desde a primeira.
     Ingressos, receita e cortesias vêm da Guru (vendas aprovadas). O pixel registra só parte das vendas, por isso o ingresso nunca é o do pixel.
-    Qualificação só pela Guru: CP2/CP3 na oferta ou na URL do checkout = qualificado, CP1 = desqualificado; ofertas do comercial sem CP ficam fora da taxa.
+    Qualificação só pela Guru e por comprador (ingresso duplo conta 1): CP2/CP3 na oferta ou na URL do checkout = qualificado, CP1 = desqualificado; ofertas do comercial sem CP ficam fora da taxa.
     Cargo vem da resposta do formulário no HubSpot ([TI][FORM] Cargo), cruzada pelo e-mail do comprador.
     Metas de referência da turnê: CAC de ingresso R$ 400, qualificação 50%, CAC qualificado R$ 800.
   </footer>
@@ -264,7 +265,7 @@ function calc(c){
     spend:m.spend||0, imp:m.imp||0, clk:m.clk||0, lpv:m.lpv||0, ic:m.ic||0, pur:m.pur||0,
     ing, vendas:g.vendas||0, rec:g.rec||0, cort:g.cort||0, qual, desq, semcp:g.semcp||0, cls,
     cpm: div(m.spend*1000,m.imp), ctr: div(m.clk,m.imp), connect: div(m.lpv,m.clk), chk: div(m.ic,m.lpv), conv: div(ing,m.lpv),
-    cac: div(m.spend,ing), txq: div(qual,cls), qualEst: cls? ing*qual/cls : null,
+    cac: div(m.spend,ing), txq: div(qual,cls), qualEst: cls? (g.vendas||0)*qual/cls : null,
     cacq: cls&&qual ? m.spend/(ing*qual/cls) : null, ticket: div(g.rec,g.vendas), roas: div(g.rec,m.spend),
     diasCorr, dRest: daysTo(c.evento), pacing: ing/diasCorr, gastoDia: (m.spend||0)/diasCorr
   };
@@ -337,7 +338,7 @@ function renderGrid(list){
 
 // linha diária: [dia, investimento, ingressos, qualificados, desqualificados, receita, vendas, cliques, visitas, impressões, CPM, CTR link, CTR todos (os três últimos prontos do Meta)]
 function dia(r){
-  const cls=r[3]+r[4], txq=div(r[3],cls), qe=cls? r[2]*r[3]/cls : 0;
+  const cls=r[3]+r[4], txq=div(r[3],cls), qe=cls? r[6]*r[3]/cls : 0;
   return {txq, cpa:div(r[1],r[2]), cpaq: r[3]? r[1]/qe : null, ticket:div(r[5],r[6]), connect:div(r[8],r[7]), cpm:div(r[1]*1000,r[9]), ctr:div(r[7],r[9])};
 }
 function stage(lab,val,sub,key,meta,t){ return el("div",{class:"stage"+(key?" key":"")},el("span",{text:lab}),el("b",{class:"num",text:val}),el("small",{text:sub||""}),meta?el("small",{class:"meta-f "+(t||""),text:meta}):null); }
@@ -540,7 +541,7 @@ function renderDetail(c){
             el("div",{class:"qrow"},
               gap>0 ? el("span",{},"Faltam ",el("b",{class:"num",text:(gap*100).toLocaleString("pt-BR",{maximumFractionDigits:0})+" p.p."})," · ",el("b",{class:"num",text:int(falta)})," qualificados a mais no volume atual")
                     : el("span",{},el("b",{class:"num ok",text:"Meta batida"})," · ",el("b",{class:"num",text:(-gap*100).toLocaleString("pt-BR",{maximumFractionDigits:0})+" p.p."})," acima")));})() : null),
-      el("p",{class:"note",text:"Só a Guru: CP2 ou CP3 na oferta é qualificado, CP1 é desqualificado. O CP vem do nome da oferta ou da URL do checkout (cp1-, cp2-, cp3-). Ficam sem CP só as ofertas do comercial (Grazi/SS, Seller, Comunidade R1), fora da taxa. Os qualificados do funil e o CAC qualificado aplicam essa taxa sobre todos os ingressos pagos."}))));
+      el("p",{class:"note",text:"Só a Guru: CP2 ou CP3 na oferta é qualificado, CP1 é desqualificado. O CP vem do nome da oferta ou da URL do checkout (cp1-, cp2-, cp3-). Ficam sem CP só as ofertas do comercial (Grazi/SS, Seller, Comunidade R1), fora da taxa. Conta por comprador: o ingresso duplo vale 1, porque só quem comprou declarou o faturamento. Os qualificados do funil e o CAC qualificado aplicam essa taxa sobre todas as vendas pagas."}))));
 
   // cargos — barras horizontais empilhadas por classe da Guru
   const maxV=Math.max(1,...c.cargos.map(r=>r.vendas));
@@ -562,7 +563,7 @@ function renderDetail(c){
 
   // público quente × frio e páginas
   const rowCalc=r=>{const ing=r.ing||0,q=r.qual||0,dq=r.desq||0,cls=q+dq,sp=r.spend||0,tx=div(q,cls);
-    return {sp,ing,q,tx,cpa:sp?div(sp,ing):null,cacq:(tx&&sp)?sp/(ing*tx):null,cpm:div(sp*1000,r.imp),ctr:div(r.clk,r.imp),connect:div(r.lpv,r.clk),conv:div(ing,r.lpv),cpc:div(sp,r.clk),imp:r.imp,clk:r.clk,lpv:r.lpv};};
+    return {sp,ing,q,tx,cpa:sp?div(sp,ing):null,cacq:(tx&&sp)?sp/((r.vendas||ing)*tx):null,cpm:div(sp*1000,r.imp),ctr:div(r.clk,r.imp),connect:div(r.lpv,r.clk),conv:div(ing,r.lpv),cpc:div(sp,r.clk),imp:r.imp,clk:r.clk,lpv:r.lpv};};
   const sumRows=rows=>rows.reduce((a,r)=>{for(const[k2,v]of Object.entries(r)) if(typeof v==="number") a[k2]=(a[k2]||0)+v; return a;},{});
   const money=v=>v?brl(v):"—";
   const cell=(t,cls)=>el("td",{class:"num"+(cls?" "+cls:""),text:t});
@@ -641,10 +642,17 @@ function renderDetail(c){
   const tb=el("tbody");
   c.camps.forEach(x=>tb.append(el("tr",{},
     el("td",{},el("span",{class:"st "+(x.status==="ACTIVE"?"on":"off"),text:x.status==="ACTIVE"?"ATIVA":"PAUSADA"}),x.name),
-    el("td",{class:"num",text:brl(x.spend)}),el("td",{class:"num",text:int(x.lpv)}),el("td",{class:"num",text:int(x.pur)}),
+    el("td",{class:"num",text:brl(x.spend)}),el("td",{class:"num",text:int(x.lpv)}),el("td",{class:"num",text:int(x.ing)}),
+    el("td",{class:"num",text:x.ing?brl(div(x.spend,x.ing)):"—"}),
     el("td",{class:"num",text:pct(div(x.spend,k.spend),0)}))));
-  d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Campanhas da praça"}),el("small",{text:"ordenadas por investimento · compras do pixel"})),
-    el("div",{class:"tw"},el("table",{},el("thead",{},el("tr",{},...["Campanha","Investimento","Visitas LP","Compras pixel","% da verba"].map(h=>el("th",{text:h})))),tb))));
+  (c.camps_extra||[]).forEach(x=>tb.append(el("tr",{class:"camp-extra"},
+    el("td",{},el("span",{class:"st off",text:x.fora?"FORA DA PRAÇA":"SEM UTM"}),x.semcamp?"Sem campanha identificada (sem formulário, UTM vazia ou {{campaign.name}})":x.name),
+    el("td",{class:"num",text:"—"}),el("td",{class:"num",text:"—"}),el("td",{class:"num",text:int(x.ing)}),el("td",{class:"num",text:"—"}),el("td",{class:"num",text:"—"}))));
+  const ingCamp=c.camps.reduce((a,x)=>a+(x.ing||0),0)+(c.camps_extra||[]).reduce((a,x)=>a+(x.ing||0),0);
+  tb.append(el("tr",{class:"camp-tot"},el("td",{text:"Total"}),el("td",{class:"num",text:brl(k.spend)}),el("td",{class:"num",text:int(c.camps.reduce((a,x)=>a+(x.lpv||0),0))}),
+    el("td",{class:"num",text:int(ingCamp)}),el("td",{class:"num",text:brl(div(k.spend,ingCamp))}),el("td",{class:"num",text:"100%"})));
+  d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Campanhas da praça"}),el("small",{text:"ordenadas por investimento · ingressos pagos da Guru, ligados à campanha pela UTM do formulário que o comprador preencheu antes da compra"})),
+    el("div",{class:"tw"},el("table",{},el("thead",{},el("tr",{},...["Campanha","Investimento","Visitas LP","Ingressos (Guru)","CPA","% da verba"].map(h=>el("th",{text:h})))),tb))));
 }
 
 function render(){
