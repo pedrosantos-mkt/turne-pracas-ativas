@@ -303,10 +303,10 @@ function renderGrid(list){
   });
 }
 
-// linha diária: [dia, investimento, ingressos, qualificados, desqualificados, receita, vendas, cliques, visitas]
+// linha diária: [dia, investimento, ingressos, qualificados, desqualificados, receita, vendas, cliques, visitas, impressões]
 function dia(r){
   const cls=r[3]+r[4], txq=div(r[3],cls), qe=cls? r[2]*r[3]/cls : 0;
-  return {txq, cpa:div(r[1],r[2]), cpaq: r[3]? r[1]/qe : null, ticket:div(r[5],r[6]), connect:div(r[8],r[7])};
+  return {txq, cpa:div(r[1],r[2]), cpaq: r[3]? r[1]/qe : null, ticket:div(r[5],r[6]), connect:div(r[8],r[7]), cpm:div(r[1]*1000,r[9]), ctr:div(r[7],r[9])};
 }
 function stage(lab,val,sub,key,meta,t){ return el("div",{class:"stage"+(key?" key":"")},el("span",{text:lab}),el("b",{class:"num",text:val}),el("small",{text:sub||""}),meta?el("small",{class:"meta-f "+(t||""),text:meta}):null); }
 function rate(v,lab,meta,t){ return el("div",{class:"rate"},el("b",{class:"num "+(t||""),text:v}),el("span",{text:lab}),meta?el("small",{class:"meta-f",text:meta}):null); }
@@ -483,18 +483,18 @@ function renderDetail(c){
     chart(c)));
 
   // tabela dia a dia
-  const tbd=el("tbody"), tot=[0,0,0,0,0,0,0,0];
+  const tbd=el("tbody"), tot=[0,0,0,0,0,0,0,0,0];
   [...c.daily].reverse().forEach(r=>{
-    const dd=dia(r); for(let i=1;i<9;i++) tot[i-1]+=(r[i]||0);
-    tbd.append(el("tr",{},el("td",{class:"num",text:dBR(r[0])}),el("td",{class:"num",text:brl(r[1])}),el("td",{class:"num",text:pct(dd.connect,0)}),el("td",{class:"num",text:int(r[2])}),
+    const dd=dia(r); for(let i=1;i<10;i++) tot[i-1]+=(r[i]||0);
+    tbd.append(el("tr",{},el("td",{class:"num",text:dBR(r[0])}),el("td",{class:"num",text:brl(r[1])}),el("td",{class:"num",text:brl(dd.cpm,2)}),el("td",{class:"num",text:pct(dd.ctr,2)}),el("td",{class:"num",text:pct(dd.connect,0)}),el("td",{class:"num",text:int(r[2])}),
       el("td",{class:"num",text:int(r[3])}),el("td",{class:"num",text:pct(dd.txq,0)}),el("td",{class:"num",text:brl(dd.cpa)}),el("td",{class:"num",text:brl(dd.cpaq)}),el("td",{class:"num",text:brl(dd.ticket)})));
   });
   const T=dia(["",...tot]);
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Dia a dia"}),el("small",{text:"mais recente primeiro · connect = visitas na página ÷ cliques no link · CPA = investimento ÷ ingressos pagos"})),
     el("div",{class:"tw daily"},el("table",{},
-      el("thead",{},el("tr",{},...["Dia","Investimento","Connect","Ingressos","Qualificados","% qualif.","CPA","CPA qualif.","Ticket médio"].map(h=>el("th",{text:h})))),
+      el("thead",{},el("tr",{},...["Dia","Investimento","CPM","CTR","Connect","Ingressos","Qualificados","% qualif.","CPA","CPA qualif.","Ticket médio"].map(h=>el("th",{text:h})))),
       tbd,
-      el("tfoot",{},el("tr",{},el("td",{text:"Total"}),el("td",{class:"num",text:brl(tot[0])}),el("td",{class:"num",text:pct(T.connect,0)}),el("td",{class:"num",text:int(tot[1])}),el("td",{class:"num",text:int(tot[2])}),
+      el("tfoot",{},el("tr",{},el("td",{text:"Total"}),el("td",{class:"num",text:brl(tot[0])}),el("td",{class:"num",text:brl(T.cpm,2)}),el("td",{class:"num",text:pct(T.ctr,2)}),el("td",{class:"num",text:pct(T.connect,0)}),el("td",{class:"num",text:int(tot[1])}),el("td",{class:"num",text:int(tot[2])}),
         el("td",{class:"num",text:pct(T.txq,0)}),el("td",{class:"num",text:brl(T.cpa)}),el("td",{class:"num",text:brl(T.cpaq)}),el("td",{class:"num",text:brl(T.ticket)})))))));
 
   // campanhas
