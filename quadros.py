@@ -20,7 +20,7 @@ def ad_url(ad):
 FIXP=lambda p:'(formulário embutido)' if 'hsforms' in p else p
 for c in d['cidades']:
   code=c['code']; pr=PR[code]
-  pub=collections.defaultdict(collections.Counter); pag=collections.defaultdict(collections.Counter); cre=collections.defaultdict(collections.Counter); prev={}
+  pub=collections.defaultdict(collections.Counter); pag=collections.defaultdict(collections.Counter); cre=collections.defaultdict(collections.Counter); prev={}; ids_cre={}
   for cid,v in ins.items():
     if v['city']!=code: continue
     for r in adsets.get(cid,[]): pub[tag_of(r['adset_name'],v['name'])]+=media(r)
@@ -32,6 +32,7 @@ for c in d['cidades']:
       if link and a['name'] not in prev: prev[a['name']]={'prev':link,'ad':a['id']}
     for r in ads.get(cid,{}).get('ins',[]):
       pag[url.get(r['ad_id'],'(sem URL)')]+=media(r); cre[nome.get(r['ad_id'],r['ad_id'])]+=media(r)
+      ids_cre.setdefault(nome.get(r['ad_id'],r['ad_id']),[]).append(r['ad_id'])
   for x in g:
     if x['status']!='approved' or not (x['payment']['total'] or 0): continue
     P=NZ(x['product']['name'])
@@ -43,9 +44,12 @@ for c in d['cidades']:
     for bucket,key in ((pub,a['tag']),(pag,FIXP(a['page'])))+(((cre,a['cre']),) if a['cre'] else ()):
       bucket[key]['ing']+=qty; bucket[key]['vendas']+=1; bucket[key][cls_]+=qty
   ordem=['Quente','Frio','Mix validados','Sem tag','Sem UTM']
-  c['publicos']=[{'nome':n,**{kk:round(vv,2) for kk,vv in pub[n].items()}} for n in ordem if n in pub]
+  MP=json.load(open('raw/metricas_publico.json')).get(code,{})
+  f_=lambda x,k,d=1: round(float(x[k])/d,6) if x.get(k) not in (None,'') else None
+  bmp={t:{'cpm':f_(x,'cpm'),'ctr_link':f_(x,'inline_link_click_ctr',100),'ctr_all':f_(x,'ctr',100),'cpc':f_(x,'cost_per_inline_link_click')} for t,x in MP.items()}
+  c['publicos']=[{'nome':n,**{kk:round(vv,2) for kk,vv in pub[n].items()},'bm':bmp.get(n)} for n in ordem if n in pub]
   c['paginas']=sorted([{'nome':n,**{kk:round(vv,2) for kk,vv in v.items()}} for n,v in pag.items()],key=lambda r:(-r.get('spend',0),-r.get('ing',0)))
-  c['criativos']=[{'nome':n,**{kk:round(vv,2) for kk,vv in v.items()},**prev.get(n,{})} for n,v in cre.items() if v.get('spend',0)>0 or v.get('ing',0)>0]
+  c['criativos']=[{'nome':n,**{kk:round(vv,2) for kk,vv in v.items()},**prev.get(n,{}),'ads':ids_cre.get(n,[])} for n,v in cre.items() if v.get('spend',0)>0 or v.get('ing',0)>0]
 json.dump(d,open('data.json','w'),ensure_ascii=False)
 for c in d['cidades'][:2]:
   print(c['nome']); [print('  ',r) for r in c['publicos']]; [print('  ',r) for r in c['paginas']]

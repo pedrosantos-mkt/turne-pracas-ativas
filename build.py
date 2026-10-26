@@ -43,7 +43,7 @@ for code,pr in PR.items():
   start=min([d for d in daily if daily[d][0]>0] or [ev])
   days=sorted(d for d in daily if d>=start)
   bm=BM.get(code,{}); bt=bm.get('total',{}); bd=bm.get('dia',{})
-  bm_tot={'cpm':f_(bt,'cpm'),'ctr_link':f_(bt,'inline_link_click_ctr',100),'ctr_all':f_(bt,'ctr',100)}
+  bm_tot={'cpm':f_(bt,'cpm'),'ctr_link':f_(bt,'inline_link_click_ctr',100),'ctr_all':f_(bt,'ctr',100),'cpc':f_(bt,'cost_per_inline_link_click')}
   out.append({'code':code,'nome':nome,'uf':uf,'evento':ev,'rota':rota,'inicio':start,
     'meta':{k2:round(v,2) for k2,v in m.items()},'guru':{k2:round(v,2) for k2,v in s.items()},
     'cargos':sorted([{'cargo':k2,**v} for k2,v in cargos.items()],key=lambda r:-r['vendas']),'bm':bm_tot,'daily':[[d,round(daily[d][0],2)]+[round(v,2) for v in daily[d][1:]]+[f_(bd.get(d,{}),'cpm'),f_(bd.get(d,{}),'inline_link_click_ctr',100),f_(bd.get(d,{}),'ctr',100)] for d in days],'camps':sorted(camps,key=lambda c:-c['spend'])})

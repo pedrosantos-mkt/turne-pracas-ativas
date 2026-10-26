@@ -5,14 +5,7 @@ NZ=lambda s:N(s).replace(' ','').replace('-','').replace('_','')
 subs=json.load(open('raw/hs_subs.json'))
 adsets=json.load(open('raw/adsets.json')); ins=json.load(open('raw/ins.json'))
 id2set={}; name2tag={}
-def tag_of(adset,camp=''):
-  a=N(adset); c=N(camp)
-  if '[QUENTE]' in c or 'QUENTE' in a: return 'Quente'
-  if '[FRIO]' in c or 'FRIO' in a: return 'Frio'
-  if re.search(r'ENVOLVIMENTO|SEGUIDOR|\[PQ\]|SITE|ENGAJ|VISITANTE|COMPRADORES|LISTA|BASE',a): return 'Quente'
-  if re.search(r'SEMELHANT|INTERESSE|ADVANT|ADVTG|ADVANTGE|\[PF\]|ABERTO|BROAD|LAL',a): return 'Frio'
-  if 'MIX' in a or 'VALIDADO' in a: return 'Mix validados'
-  return 'Sem tag'
+from pracas import tag_of
 import os
 id2ad={}
 if os.path.exists('raw/ads.json'):

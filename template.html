@@ -429,16 +429,16 @@ function renderDetail(c){
   const sumRows=rows=>rows.reduce((a,r)=>{for(const[k2,v]of Object.entries(r)) if(typeof v==="number") a[k2]=(a[k2]||0)+v; return a;},{});
   const money=v=>v?brl(v):"—";
   const cell=(t,cls)=>el("td",{class:"num"+(cls?" "+cls:""),text:t});
-  const pubRow=(nome,r,tot)=>{const x=rowCalc(r);return el("tr",tot?{class:"tot"}:{},el("td",{text:nome}),
+  const pubRow=(nome,r,tot,bm)=>{const x=rowCalc(r), m=bm||r.bm||{};return el("tr",tot?{class:"tot"}:{},el("td",{text:nome}),
     cell(money(x.sp)),cell(int(x.ing)),cell(brl(x.cpa)),cell(int(x.q)),cell(pct(x.tx,0)),cell(brl(x.cacq),"sep"),
-    cell(brl(x.cpm)),cell(pct(x.ctr,2)),cell(pct(x.connect,0),"sep"),cell(x.imp?kfmt(x.imp):"—"),cell(int(x.clk)),cell(brl(x.cpc,2)));};
+    cell(brl(m.cpm??x.cpm)),cell(pct(m.ctr_link??x.ctr,2)),cell(pct(x.connect,0),"sep"),cell(x.imp?kfmt(x.imp):"—"),cell(int(x.clk)),cell(brl(m.cpc??x.cpc,2)));};
   const pb=el("tbody"); c.publicos.forEach(r=>pb.append(pubRow(r.nome,r)));
   const grp=(t,n,cls)=>el("th",{colspan:String(n),class:"grp"+(cls?" "+cls:""),text:t});
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Público quente × frio"}),el("small",{text:"mídia por conjunto no Meta · ingressos pelo formulário do comprador"})),
     el("div",{class:"tw"},el("table",{class:"grid-t"},
       el("thead",{},el("tr",{},el("th",{}),grp("Resultado",6,"sep"),grp("Mídia",3,"sep"),grp("Tráfego",3)),
-        el("tr",{},...["Público","Investimento","Ingressos","CPA","CP2/CP3","% qualif.","CAC qualif.","CPM","CTR","Connect","Impressões","Cliques","CPC"].map((h,i)=>el("th",{class:[6,9].includes(i)?"sep":"",text:h})))),
-      pb, el("tfoot",{},pubRow("Total",sumRows(c.publicos),true)))),
+        el("tr",{},...["Público","Investimento","Ingressos","CPA","CP2/CP3","% qualif.","CAC qualif.","CPM","CTR link","Connect","Impressões","Cliques","CPC link"].map((h,i)=>el("th",{class:[6,9].includes(i)?"sep":"",text:h})))),
+      pb, el("tfoot",{},pubRow("Total",sumRows(c.publicos),true,c.bm)))),
     el("p",{class:"note",style:"margin-top:10px",text:"Quente: envolvimento, seguidores e site. Frio: semelhantes, interesses e Advantage+. Mix validados mistura públicos. Sem UTM: vendas cujo formulário chegou sem o nome do público, sem investimento associado."})));
 
   const pt=sumRows(c.paginas), px=rowCalc(pt);
@@ -462,16 +462,16 @@ function renderDetail(c){
     if(x.prev){const a=el("a",{class:"ver",href:x.prev,target:"_blank",rel:"noopener",title:"Ver o anúncio","aria-label":"Ver o anúncio "+x.nome}); a.innerHTML=OLHO; w.append(a);}
     return w;};
   const MIN=Math.max(150,k.spend*0.01);
-  const cr=c.criativos.map(r=>({nome:r.nome,prev:r.prev,thumb:r.thumb,...rowCalc(r)})).filter(r=>r.sp>=MIN);
+  const cr=c.criativos.map(r=>({nome:r.nome,prev:r.prev,thumb:r.thumb,bm:r.bm,...rowCalc(r)})).filter(r=>r.sp>=MIN);
   const best=cr.filter(r=>r.ing>0).sort((a,b)=>(a.cacq??1e9)-(b.cacq??1e9)||a.cpa-b.cpa).slice(0,5);
   const worst=cr.filter(r=>!best.includes(r)).sort((a,b)=>{const ca=a.ing?a.cpa:1e9+a.sp, cb=b.ing?b.cpa:1e9+b.sp; return cb-ca;}).slice(0,5);
   const atrib=c.criativos.reduce((a,r)=>a+(r.ing||0),0);
   const creTable=(rows,titulo,tom)=>{const tb=el("tbody");
-    rows.forEach(x=>tb.append(el("tr",{},el("td",{class:"pg"},nomeCriativo(x)),cell(brl(x.sp)),cell(pct(x.ctr,2)),cell(int(x.ing)),
+    rows.forEach(x=>tb.append(el("tr",{},el("td",{class:"pg"},nomeCriativo(x)),cell(brl(x.sp)),cell(pct(x.bm?.ctr_link??x.ctr,2)),cell(int(x.ing)),
       cell(x.ing?brl(x.cpa):"sem venda",tone(x.cpa,META.cac)),cell(int(x.q)),cell(brl(x.cacq),tone(x.cacq,META.cacq)))));
     if(!rows.length) tb.append(el("tr",{},el("td",{colspan:"7",style:"color:var(--faint)",text:"Nenhum criativo com investimento suficiente."})));
     return el("div",{class:"cre-box "+tom},el("h5",{text:titulo}),el("div",{class:"tw"},el("table",{class:"cre-t"},
-      el("thead",{},el("tr",{},...["Criativo","Investimento","CTR","Ingressos","CPA geral","CP2/CP3","CPA qualif."].map(h=>el("th",{text:h})))),tb)));};
+      el("thead",{},el("tr",{},...["Criativo","Investimento","CTR link","Ingressos","CPA geral","CP2/CP3","CPA qualif."].map(h=>el("th",{text:h})))),tb)));};
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Melhores e piores criativos"}),
       el("small",{text:`${int(atrib)} de ${int(k.ing)} ingressos ligados a um criativo · mínimo ${brl(MIN)} investidos`})),
     el("div",{class:"cre-grid"},creTable(best,"Melhores · menor CPA qualificado","bom"),creTable(worst,"Piores · maior CPA ou sem venda","ruim")),

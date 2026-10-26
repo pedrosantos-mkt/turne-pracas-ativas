@@ -71,6 +71,16 @@ def pracas(campanhas, hoje=None):
       'mes': MESES[ev.month - 1], 'aliases': ALIASES.get(cidade, [cidade]), 'campanhas': ids}
   return dict(sorted(out.items(), key=lambda kv: kv[1]['evento']))
 
+# quente/frio pelo nome do público (ou tag na campanha)
+def tag_of(adset,camp=''):
+  a=N(adset); c=N(camp)
+  if '[QUENTE]' in c or 'QUENTE' in a: return 'Quente'
+  if '[FRIO]' in c or 'FRIO' in a: return 'Frio'
+  if re.search(r'ENVOLVIMENTO|SEGUIDOR|\[PQ\]|SITE|ENGAJ|VISITANTE|COMPRADORES|LISTA|BASE',a): return 'Quente'
+  if re.search(r'SEMELHANT|INTERESSE|ADVANT|ADVTG|ADVANTGE|\[PF\]|ABERTO|BROAD|LAL',a): return 'Frio'
+  if 'MIX' in a or 'VALIDADO' in a: return 'Mix validados'
+  return 'Sem tag'
+
 def guru_da_praca(produto, p):
   """A venda (pelo nome do produto) é desta praça e deste evento?"""
   P = NZ(produto)

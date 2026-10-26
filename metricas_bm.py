@@ -3,7 +3,7 @@ import requests, json, time
 from pracas import META_TOKEN
 T=META_TOKEN(); ACT='act_171474008015977'
 P=json.load(open('raw/pracas.json'))
-F='spend,impressions,cpm,ctr,inline_link_click_ctr,inline_link_clicks'
+F='spend,impressions,cpm,ctr,inline_link_click_ctr,inline_link_clicks,cost_per_inline_link_click'
 def get(p):
   out=[]; url=f'https://graph.facebook.com/v21.0/{ACT}/insights'; p={**p,'access_token':T}
   while url:
