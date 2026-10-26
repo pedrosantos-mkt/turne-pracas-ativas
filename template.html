@@ -662,7 +662,15 @@ function render(){
   const c=DATA.cidades.find(x=>x.code===sel); if(c) renderDetail(c);
 }
 
-document.getElementById("stamp").textContent="Atualizado em "+DATA.gerado+" · atualiza sozinho às 6h, 9h, 12h, 15h, 18h e 21h";
+// próxima atualização automática (6h, 9h, 12h, 15h, 18h e 21h de Brasília, no minuto 7)
+function proximaAtualizacao(){
+  const p=Object.fromEntries(new Intl.DateTimeFormat("pt-BR",{timeZone:"America/Sao_Paulo",hour:"numeric",minute:"numeric",hourCycle:"h23"}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  const agora=Number(p.hour)*60+Number(p.minute);
+  const h=[6,9,12,15,18,21].find(h=>h*60+7>agora);
+  return h!=null ? `hoje às ${h}h` : "amanhã às 6h";
+}
+function carimbo(){ document.getElementById("stamp").textContent="Atualizado em "+DATA.gerado+" · próxima atualização "+proximaAtualizacao(); }
+carimbo(); setInterval(carimbo,60000);
 const words=DATA.cidades.map(c=>c.nome.toUpperCase()+" "+dBR(c.evento));
 document.getElementById("ticker").replaceChildren(...[...words,...words].map(w=>el("span",{text:w})));
 render();
