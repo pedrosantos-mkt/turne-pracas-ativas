@@ -196,6 +196,20 @@ td.pg{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px;overflow
 .cre-box.bom h5{color:var(--ok)} .cre-box.ruim h5{color:var(--bad)}
 table.cre-t{min-width:640px}
 table.cre-t td.pg{width:40%}
+.raio-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.raio-chip{border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px;color:var(--muted)}
+.raio-chip b{color:var(--fg);font-weight:700}
+.raio-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px;align-items:start}
+@media (max-width:900px){.raio-grid{grid-template-columns:1fr}}
+.raio-mapa{border:1px solid var(--line-soft);border-radius:12px;padding:12px;background:rgba(var(--shade-rgb),.12)}
+.raio-mapa svg{display:block;width:100%;height:auto}
+.raio-lado{display:flex;flex-direction:column;gap:12px;min-width:0}
+.raio-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.raio-kpis div{border:1px solid var(--line-soft);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.raio-kpis b{font-family:var(--f-display);font-size:26px;font-weight:400;line-height:1}
+.raio-kpis span{font-size:12px;color:var(--muted)}
+.raio-h5{margin:4px 0 0;font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--fg)}
+table.raio-t{min-width:420px}
 footer{margin-top:28px;font-size:12px;color:var(--faint);line-height:1.6;max-width:90ch}
 </style>
 
@@ -366,6 +380,62 @@ function chart(c){
   wrap.append(s,tip); return wrap;
 }
 
+
+function painelRaio(c){
+  const R=c.raio, cs=R.centros.filter(e=>e.lat!=null&&e.raio_km);
+  const dentroC=R.municipios.reduce((a,m)=>a+m.compradores,0), foraC=R.fora.reduce((a,m)=>a+m.compradores,0), totC=dentroC+foraC;
+  const popT=R.municipios.reduce((a,m)=>a+m.pop,0);
+  const wrap=el("div",{});
+  wrap.append(el("div",{class:"sec-t"},el("h4",{text:"Raio dos conjuntos de anúncios"}),el("small",{text:"localização dos conjuntos no Meta · municípios do IBGE (Censo 2022) · cidade do comprador na Guru"})));
+  // centros como chips
+  const chips=el("div",{class:"raio-chips"});
+  R.centros.forEach(e=>chips.append(el("span",{class:"raio-chip"},el("b",{text:e.nome+(e.uf?" · "+e.uf:"")}),
+    document.createTextNode(e.raio_km?` raio ${e.raio_km} km`:" estado inteiro"),el("small",{text:` · ${e.conjuntos} conjunto${e.conjuntos===1?"":"s"}${e.ativos?` (${e.ativos} ativo${e.ativos===1?"":"s"})`:""} · ${brl(e.gasto)}`}))));
+  wrap.append(chips);
+  const grid=el("div",{class:"raio-grid"});
+  // mapa: projeção simples em km a partir do centro principal
+  const box=el("div",{class:"raio-mapa"});
+  if(cs.length){
+    const lat0=cs[0].lat, lon0=cs[0].lon, kx=111.32*Math.cos(lat0*Math.PI/180), ky=110.57;
+    const pts=[...cs.map(e=>({x:(e.lon-lon0)*kx,y:-(e.lat-lat0)*ky,r:e.raio_km})),...R.fora.filter(m=>m.lat!=null&&m.km!=null&&m.km<=Math.max(...cs.map(e=>e.raio_km))*2.2).map(m=>({x:(m.lon-lon0)*kx,y:-(m.lat-lat0)*ky,r:0}))];
+    let x0=Math.min(...pts.map(p=>p.x-p.r)), x1=Math.max(...pts.map(p=>p.x+p.r)), y0=Math.min(...pts.map(p=>p.y-p.r)), y1=Math.max(...pts.map(p=>p.y+p.r));
+    const pad=Math.max(x1-x0,y1-y0)*.06; x0-=pad;x1+=pad;y0-=pad;y1+=pad;
+    const W=460, H=Math.max(260,Math.min(520,W*(y1-y0)/(x1-x0))), sc=Math.min(W/(x1-x0),H/(y1-y0));
+    const P=(lat,lon)=>[(((lon-lon0)*kx)-x0)*sc,((-(lat-lat0)*ky)-y0)*sc];
+    const NS="http://www.w3.org/2000/svg", s=document.createElementNS(NS,"svg");
+    s.setAttribute("viewBox",`0 0 ${W} ${H}`); s.setAttribute("role","img"); s.setAttribute("aria-label","Mapa do raio dos conjuntos e das cidades dos compradores");
+    const add=(tg,a,txt)=>{const e=document.createElementNS(NS,tg);for(const[k,v]of Object.entries(a))e.setAttribute(k,v);if(txt!=null)e.textContent=txt;s.append(e);return e;};
+    cs.forEach(e=>{const [x,y]=P(e.lat,e.lon);
+      add("circle",{cx:x,cy:y,r:e.raio_km*sc,style:"fill:rgba(var(--gold-rgb),.08);stroke:var(--gold)","stroke-width":1.5,"stroke-dasharray":"5 4"});
+      add("circle",{cx:x,cy:y,r:4,style:"fill:var(--gold)"});});
+    const maxPop=Math.max(1,...R.municipios.map(m=>m.pop));
+    R.municipios.forEach(m=>{const [x,y]=P(m.lat,m.lon); add("circle",{cx:x,cy:y,r:2+5*Math.sqrt(m.pop/maxPop),style:m.compradores?"fill:var(--gold-2);stroke:var(--gold)":"fill:rgba(var(--ink-rgb),.28)","stroke-width":1});});
+    R.fora.filter(m=>m.lat!=null).forEach(m=>{const [x,y]=P(m.lat,m.lon); if(x<0||y<0||x>W||y>H) return; add("circle",{cx:x,cy:y,r:3.5,style:"fill:var(--bad)"});});
+    const rot=[...R.municipios].sort((a,b)=>b.compradores-a.compradores||b.pop-a.pop).slice(0,6);
+    rot.forEach(m=>{const [x,y]=P(m.lat,m.lon); add("text",{x:x+7,y:y+4,"font-size":11,style:"fill:var(--fg);paint-order:stroke;stroke:var(--bg);stroke-width:3px"},m.nome);});
+    box.append(s);
+    box.append(el("div",{class:"lg",style:"margin-top:8px"},el("span",{},el("i",{style:"background:var(--gold-2);border-radius:50%"}),"com compradores"),el("span",{},el("i",{style:"background:rgba(var(--ink-rgb),.28);border-radius:50%"}),"sem compradores"),el("span",{},el("i",{style:"background:var(--bad);border-radius:50%"}),"compradores fora do raio")));
+  } else box.append(el("p",{class:"note",text:"A segmentação desta praça não usa raio (estado inteiro ou sem localização)."}));
+  grid.append(box);
+  // números e lista
+  const lado=el("div",{class:"raio-lado"});
+  lado.append(el("div",{class:"raio-kpis"},
+    el("div",{},el("b",{class:"num",text:int(R.municipios.length)}),el("span",{text:"municípios no raio"})),
+    el("div",{},el("b",{class:"num",text:kfmt(popT)}),el("span",{text:"habitantes no raio"})),
+    el("div",{},el("b",{class:"num",text:pct(div(dentroC,totC),0)}),el("span",{text:`compradores de dentro do raio (${int(dentroC)} de ${int(totC)})`}))));
+  const tb=el("tbody");
+  const linhas=[...R.municipios.filter(m=>m.compradores).map(m=>({...m,onde:"dentro"})),...R.fora.map(m=>({...m,onde:"fora"}))].sort((a,b)=>b.compradores-a.compradores).slice(0,10);
+  linhas.forEach(m=>tb.append(el("tr",{},el("td",{text:m.nome+(m.uf?" · "+m.uf:"")}),el("td",{class:"num",text:m.km!=null?m.km+" km":"—"}),
+    el("td",{class:"num",text:m.pop?kfmt(m.pop):"—"}),el("td",{class:"num",text:int(m.compradores)}),el("td",{},el("span",{class:"pill "+(m.onde==="dentro"?"ok":"bad"),text:m.onde==="dentro"?"no raio":"fora do raio"})))));
+  if(!linhas.length) tb.append(el("tr",{},el("td",{colspan:"5",style:"color:var(--faint)",text:"Nenhuma venda paga com cidade informada."})));
+  lado.append(el("h5",{class:"raio-h5",text:"De onde vêm os compradores"}));
+  lado.append(el("div",{class:"tw"},el("table",{class:"raio-t"},el("thead",{},el("tr",{},...["Cidade","Distância","População","Compradores",""].map(h=>el("th",{text:h})))),tb)));
+  const semComp=R.municipios.filter(m=>!m.compradores).sort((a,b)=>b.pop-a.pop).slice(0,6);
+  if(semComp.length) lado.append(el("p",{class:"note",style:"margin-top:10px",text:"Maiores cidades do raio ainda sem comprador: "+semComp.map(m=>`${m.nome} (${kfmt(m.pop)} hab.)`).join(", ")+"."}));
+  grid.append(lado); wrap.append(grid);
+  return wrap;
+}
+
 function renderDetail(c){
   const d=document.getElementById("detail"); const k=c.k; d.replaceChildren();
   const dr=k.dRest;
@@ -494,6 +564,9 @@ function renderDetail(c){
       el("small",{text:`${int(atrib)} de ${int(k.ing)} ingressos ligados a um criativo · mínimo ${brl(MIN)} investidos`})),
     el("div",{class:"cre-grid"},creTable(best,"Melhores · menor CPA qualificado","bom"),creTable(worst,"Piores · maior CPA ou sem venda","ruim")),
     el("p",{class:"note",style:"margin-top:10px",text:"Ingresso ligado ao criativo pela UTM do formulário que o comprador preencheu antes de pagar. Compradores sem UTM ficam fora deste ranking, então o CPA aqui tende a ser maior que o da praça."})));
+
+  // raio de entrega: localização dos conjuntos no Meta e cidade dos compradores na Guru
+  if(c.raio) d.append(painelRaio(c));
 
   // dia a dia
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Investimento e ingressos por dia"}),
