@@ -409,10 +409,25 @@ function painelRaio(c){
       add("circle",{cx:x,cy:y,r:e.raio_km*sc,style:"fill:rgba(var(--gold-rgb),.08);stroke:var(--gold)","stroke-width":1.5,"stroke-dasharray":"5 4"});
       add("circle",{cx:x,cy:y,r:4,style:"fill:var(--gold)"});});
     const maxPop=Math.max(1,...R.municipios.map(m=>m.pop));
-    R.municipios.forEach(m=>{const [x,y]=P(m.lat,m.lon); add("circle",{cx:x,cy:y,r:2+5*Math.sqrt(m.pop/maxPop),style:m.compradores?"fill:var(--gold-2);stroke:var(--gold)":"fill:rgba(var(--ink-rgb),.28)","stroke-width":1});});
-    R.fora.filter(m=>m.lat!=null).forEach(m=>{const [x,y]=P(m.lat,m.lon); if(x<0||y<0||x>W||y>H) return; add("circle",{cx:x,cy:y,r:3.5,style:"fill:var(--bad)"});});
-    const rot=[...R.municipios].sort((a,b)=>b.compradores-a.compradores||b.pop-a.pop).slice(0,6);
-    rot.forEach(m=>{const [x,y]=P(m.lat,m.lon); add("text",{x:x+7,y:y+4,"font-size":11,style:"fill:var(--fg);paint-order:stroke;stroke:var(--bg);stroke-width:3px"},m.nome);});
+    // pontos: municípios do raio e cidades dos compradores fora dele
+    const pontos=[];
+    R.municipios.forEach(m=>{const [x,y]=P(m.lat,m.lon); pontos.push({m,x,y,r:2+5*Math.sqrt(m.pop/maxPop),cor:m.compradores?"fill:var(--gold-2);stroke:var(--gold)":"fill:rgba(var(--ink-rgb),.28)",fora:false});});
+    R.fora.filter(m=>m.lat!=null).forEach(m=>{const [x,y]=P(m.lat,m.lon); if(x<0||y<0||x>W||y>H) return; pontos.push({m,x,y,r:3.5,cor:"fill:var(--bad)",fora:true});});
+    pontos.forEach(p=>{const e=add("circle",{cx:p.x,cy:p.y,r:p.r,style:p.cor,"stroke-width":1});
+      const ti=document.createElementNS(NS,"title"); ti.textContent=`${p.m.nome}${p.m.uf?" · "+p.m.uf:""} — ${p.m.compradores} comprador${p.m.compradores===1?"":"es"}${p.m.km!=null?" · "+p.m.km+" km":""}`; e.append(ti);});
+    // nomes: prioridade para quem tem comprador, depois população; sem sobrepor
+    const usados=pontos.map(p=>({x0:p.x-p.r,y0:p.y-p.r,x1:p.x+p.r,y1:p.y+p.r}));
+    const bate=b=>b.x0<2||b.x1>W-2||b.y0<2||b.y1>H-2||usados.some(u=>b.x0<u.x1&&b.x1>u.x0&&b.y0<u.y1&&b.y1>u.y0);
+    [...pontos].sort((a,b)=>(b.m.compradores-a.m.compradores)||((b.m.pop||0)-(a.m.pop||0))).forEach(p=>{
+      const txt=p.m.nome, fs=p.m.compradores?11:10, w=txt.length*fs*.56, h=fs+2;
+      const pos=[[p.x+p.r+3,p.y+fs*.35,"start"],[p.x-p.r-3,p.y+fs*.35,"end"],[p.x,p.y-p.r-4,"middle"],[p.x,p.y+p.r+fs+1,"middle"]];
+      for(const [lx,ly,anc] of pos){
+        const x0=anc==="start"?lx:anc==="end"?lx-w:lx-w/2, b={x0,y0:ly-fs,x1:x0+w,y1:ly-fs+h};
+        if(bate(b)) continue;
+        usados.push(b);
+        add("text",{x:lx,y:ly,"text-anchor":anc,"font-size":fs,style:`fill:${p.fora?"var(--bad)":p.m.compradores?"var(--fg)":"var(--muted)"};paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round`},txt);
+        break;
+      }});
     box.append(s);
     box.append(el("div",{class:"lg",style:"margin-top:8px"},el("span",{},el("i",{style:"background:var(--gold-2);border-radius:50%"}),"com compradores"),el("span",{},el("i",{style:"background:rgba(var(--ink-rgb),.28);border-radius:50%"}),"sem compradores"),el("span",{},el("i",{style:"background:var(--bad);border-radius:50%"}),"compradores fora do raio")));
   } else box.append(el("p",{class:"note",text:"A segmentação desta praça não usa raio (estado inteiro ou sem localização)."}));
