@@ -490,7 +490,7 @@ function render(){
   const c=DATA.cidades.find(x=>x.code===sel); if(c) renderDetail(c);
 }
 
-document.getElementById("stamp").textContent="Atualizado em "+DATA.gerado;
+document.getElementById("stamp").textContent="Atualizado em "+DATA.gerado+" · atualiza sozinho a cada 3 horas";
 const words=DATA.cidades.map(c=>c.nome.toUpperCase()+" "+dBR(c.evento));
 document.getElementById("ticker").replaceChildren(...[...words,...words].map(w=>el("span",{text:w})));
 render();
