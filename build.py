@@ -3,6 +3,8 @@ g=json.load(open('raw/guru.json')); hs=json.load(open('raw/hs.json')); ins=json.
 N=lambda s:unicodedata.normalize('NFKD',s or '').encode('ascii','ignore').decode().upper().replace(' ','')
 from pracas import guru_da_praca
 PR=json.load(open('raw/pracas.json'))
+BM=json.load(open('raw/metricas_bm.json'))
+f_=lambda x,k,d=1: round(float(x[k])/d,6) if x.get(k) not in (None,'') else None
 _QUAL_OLD={'200 mil a 499 mil por mês','500 mil a 999 mil por mês','1 milhão a 3 milhões por mês','3 milhões a 6 milhões por mês','Maior que 6 milhões por mês'}
 def A(row,t,key='actions'):
   for a in row.get(key) or []:
@@ -40,8 +42,10 @@ for code,pr in PR.items():
     cargos[cg][cls_]+=1; cargos[cg]['vendas']+=1
   start=min([d for d in daily if daily[d][0]>0] or [ev])
   days=sorted(d for d in daily if d>=start)
+  bm=BM.get(code,{}); bt=bm.get('total',{}); bd=bm.get('dia',{})
+  bm_tot={'cpm':f_(bt,'cpm'),'ctr_link':f_(bt,'inline_link_click_ctr',100),'ctr_all':f_(bt,'ctr',100)}
   out.append({'code':code,'nome':nome,'uf':uf,'evento':ev,'rota':rota,'inicio':start,
     'meta':{k2:round(v,2) for k2,v in m.items()},'guru':{k2:round(v,2) for k2,v in s.items()},
-    'cargos':sorted([{'cargo':k2,**v} for k2,v in cargos.items()],key=lambda r:-r['vendas']),'daily':[[d,round(daily[d][0],2)]+[round(v,2) for v in daily[d][1:]] for d in days],'camps':sorted(camps,key=lambda c:-c['spend'])})
+    'cargos':sorted([{'cargo':k2,**v} for k2,v in cargos.items()],key=lambda r:-r['vendas']),'bm':bm_tot,'daily':[[d,round(daily[d][0],2)]+[round(v,2) for v in daily[d][1:]]+[f_(bd.get(d,{}),'cpm'),f_(bd.get(d,{}),'inline_link_click_ctr',100),f_(bd.get(d,{}),'ctr',100)] for d in days],'camps':sorted(camps,key=lambda c:-c['spend'])})
 json.dump({'gerado':dt.datetime.now().strftime('%d/%m/%Y %H:%M'),'cidades':out},open('data.json','w'),ensure_ascii=False)
 for c in out: print(c['nome'],round(c['meta']['spend']),c['guru'],len(c['daily']),c['inicio'])
