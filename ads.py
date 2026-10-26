@@ -18,7 +18,7 @@ def get(path,p,base=None,tentativas=3):
   return out
 filtro=lambda ch: json.dumps([{'field':'campaign.id','operator':'IN','value':ch}])
 ads=[];st=[]
-CAMPOS_AD='id,name,adset_id,campaign_id,creative{asset_feed_spec{link_urls},object_story_spec{link_data{link},video_data{call_to_action}}}'
+CAMPOS_AD='id,name,adset_id,campaign_id,preview_shareable_link,creative{instagram_permalink_url,asset_feed_spec{link_urls},object_story_spec{link_data{link},video_data{call_to_action}}}'
 CAMPOS_INS='ad_id,campaign_id,spend,impressions,inline_link_clicks,actions'
 for i in range(0,len(ids),15):
   ch=ids[i:i+15]

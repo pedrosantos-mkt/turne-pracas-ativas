@@ -4,6 +4,6 @@ set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p raw
 export TZ=America/Sao_Paulo
-for s in allcamp ins adsets ads guru hs hs_subs build quadros gerar; do
+for s in allcamp ins adsets ads guru hs hs_subs build quadros thumbs gerar; do
   echo "== $s"; python3 -u "$s.py"
 done

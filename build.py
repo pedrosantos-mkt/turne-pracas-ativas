@@ -11,7 +11,7 @@ def A(row,t,key='actions'):
 out=[]
 for code,pr in PR.items():
   nome,uf,ev,rota=pr['nome'],pr['uf'],pr['evento'],pr['rota']
-  m=collections.Counter(); daily=collections.defaultdict(lambda:[0,0,0,0,0,0]); camps=[]
+  m=collections.Counter(); daily=collections.defaultdict(lambda:[0,0,0,0,0,0,0,0]); camps=[]
   for cid,v in ins.items():
     if v['city']!=code: continue
     cm=collections.Counter()
@@ -19,7 +19,8 @@ for code,pr in PR.items():
       cm['spend']+=float(row['spend']); cm['imp']+=int(row['impressions']); cm['clk']+=int(row.get('inline_link_clicks',0))
       cm['lpv']+=A(row,'landing_page_view'); cm['ic']+=A(row,'initiate_checkout'); cm['pur']+=A(row,'purchase')
     m+=cm
-    for row in v['daily'] or []: daily[row['date_start']][0]+=float(row['spend'])
+    for row in v['daily'] or []:
+      dd=daily[row['date_start']]; dd[0]+=float(row['spend']); dd[6]+=int(row.get('inline_link_clicks',0)); dd[7]+=A(row,'landing_page_view')
     if cm['spend']>0: camps.append({'name':v['name'],'status':v['status'],'spend':round(cm['spend'],2),'lpv':int(cm['lpv']),'pur':int(cm['pur'])})
   s=collections.Counter(); cargos=collections.defaultdict(collections.Counter)
   for x in g:

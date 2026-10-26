@@ -20,12 +20,16 @@ def ad_url(ad):
 FIXP=lambda p:'(formulário embutido)' if 'hsforms' in p else p
 for c in d['cidades']:
   code=c['code']; pr=PR[code]
-  pub=collections.defaultdict(collections.Counter); pag=collections.defaultdict(collections.Counter); cre=collections.defaultdict(collections.Counter)
+  pub=collections.defaultdict(collections.Counter); pag=collections.defaultdict(collections.Counter); cre=collections.defaultdict(collections.Counter); prev={}
   for cid,v in ins.items():
     if v['city']!=code: continue
     for r in adsets.get(cid,[]): pub[tag_of(r['adset_name'],v['name'])]+=media(r)
     url={a['id']:ad_url(a) for a in ads.get(cid,{}).get('ads',[])}
     nome={a['id']:a['name'] for a in ads.get(cid,{}).get('ads',[])}
+    for a in ads.get(cid,{}).get('ads',[]):
+      cr_=a.get('creative') or {}
+      link=a.get('preview_shareable_link') or cr_.get('instagram_permalink_url')
+      if link and a['name'] not in prev: prev[a['name']]={'prev':link,'ad':a['id']}
     for r in ads.get(cid,{}).get('ins',[]):
       pag[url.get(r['ad_id'],'(sem URL)')]+=media(r); cre[nome.get(r['ad_id'],r['ad_id'])]+=media(r)
   for x in g:
@@ -41,7 +45,7 @@ for c in d['cidades']:
   ordem=['Quente','Frio','Mix validados','Sem tag','Sem UTM']
   c['publicos']=[{'nome':n,**{kk:round(vv,2) for kk,vv in pub[n].items()}} for n in ordem if n in pub]
   c['paginas']=sorted([{'nome':n,**{kk:round(vv,2) for kk,vv in v.items()}} for n,v in pag.items()],key=lambda r:(-r.get('spend',0),-r.get('ing',0)))
-  c['criativos']=[{'nome':n,**{kk:round(vv,2) for kk,vv in v.items()}} for n,v in cre.items() if v.get('spend',0)>0 or v.get('ing',0)>0]
+  c['criativos']=[{'nome':n,**{kk:round(vv,2) for kk,vv in v.items()},**prev.get(n,{})} for n,v in cre.items() if v.get('spend',0)>0 or v.get('ing',0)>0]
 json.dump(d,open('data.json','w'),ensure_ascii=False)
 for c in d['cidades'][:2]:
   print(c['nome']); [print('  ',r) for r in c['publicos']]; [print('  ',r) for r in c['paginas']]
