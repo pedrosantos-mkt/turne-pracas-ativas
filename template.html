@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono&family=DM+Serif+Display:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>
 /* Layout: cabeçalho da turnê → abas por rota → grade de praças → raio-x da praça escolhida (funil, KPIs, dia a dia, campanhas) */
 :root{
@@ -199,8 +199,8 @@ table.cre-t td.pg{width:40%}
 .raio-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .raio-chip{border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px;color:var(--muted)}
 .raio-chip b{color:var(--fg);font-weight:700}
-.raio-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px;align-items:start}
-@media (max-width:900px){.raio-grid{grid-template-columns:1fr}}
+.raio-grid{display:grid;grid-template-columns:1fr;gap:20px}
+.raio-mapa .mono{font-family:"DM Mono",ui-monospace,"SF Mono",Menlo,monospace}
 .raio-mapa{border:1px solid var(--line-soft);border-radius:12px;padding:12px;background:rgba(var(--shade-rgb),.12)}
 .raio-mapa svg{display:block;width:100%;height:auto}
 .raio-lado{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -381,6 +381,7 @@ function chart(c){
 }
 
 
+const NZn=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z]/g,'');
 function painelRaio(c){
   const R=c.raio, cs=R.centros.filter(e=>e.lat!=null&&e.raio_km);
   const dentroC=R.municipios.reduce((a,m)=>a+m.compradores,0), foraC=R.fora.reduce((a,m)=>a+m.compradores,0), totC=dentroC+foraC;
@@ -396,40 +397,73 @@ function painelRaio(c){
   // mapa: projeção simples em km a partir do centro principal
   const box=el("div",{class:"raio-mapa"});
   if(cs.length){
-    const lat0=cs[0].lat, lon0=cs[0].lon, kx=111.32*Math.cos(lat0*Math.PI/180), ky=110.57;
-    const pts=[...cs.map(e=>({x:(e.lon-lon0)*kx,y:-(e.lat-lat0)*ky,r:e.raio_km})),...R.fora.filter(m=>m.lat!=null&&m.km!=null&&m.km<=Math.max(...cs.map(e=>e.raio_km))*2.2).map(m=>({x:(m.lon-lon0)*kx,y:-(m.lat-lat0)*ky,r:0}))];
-    let x0=Math.min(...pts.map(p=>p.x-p.r)), x1=Math.max(...pts.map(p=>p.x+p.r)), y0=Math.min(...pts.map(p=>p.y-p.r)), y1=Math.max(...pts.map(p=>p.y+p.r));
-    const pad=Math.max(x1-x0,y1-y0)*.06; x0-=pad;x1+=pad;y0-=pad;y1+=pad;
-    const W=460, H=Math.max(260,Math.min(520,W*(y1-y0)/(x1-x0))), sc=Math.min(W/(x1-x0),H/(y1-y0));
-    const P=(lat,lon)=>[(((lon-lon0)*kx)-x0)*sc,((-(lat-lat0)*ky)-y0)*sc];
+    const c0=(R.evento&&R.evento.lat!=null)?R.evento:cs[0], lat0=c0.lat, lon0=c0.lon, kx=111.32*Math.cos(lat0*Math.PI/180), ky=110.57;
+    const rMax=Math.max(...cs.map(e=>e.raio_km));
+    const xy=(lat,lon)=>[(lon-lon0)*kx,-(lat-lat0)*ky];   // km a partir do centro principal
+    // alcance do mapa: o raio + folga, até onde houver comprador por perto (no máximo 2x o raio)
+    const foraPerto=R.fora.filter(m=>m.lat!=null&&m.km!=null&&m.km<=rMax*2);
+    const ext=Math.max(rMax*1.35,...foraPerto.map(m=>m.km*1.1),...cs.map(e=>{const [x,y]=xy(e.lat,e.lon);return Math.hypot(x,y)+e.raio_km;}));
+    const W=900, H=Math.round(W*0.72), sc=Math.min(W,H)/2/ext*0.98, cx=W/2, cy=H/2;
+    const P=(lat,lon)=>{const [x,y]=xy(lat,lon);return [cx+x*sc,cy+y*sc];};
     const NS="http://www.w3.org/2000/svg", s=document.createElementNS(NS,"svg");
-    s.setAttribute("viewBox",`0 0 ${W} ${H}`); s.setAttribute("role","img"); s.setAttribute("aria-label","Mapa do raio dos conjuntos e das cidades dos compradores");
-    const add=(tg,a,txt)=>{const e=document.createElementNS(NS,tg);for(const[k,v]of Object.entries(a))e.setAttribute(k,v);if(txt!=null)e.textContent=txt;s.append(e);return e;};
+    s.setAttribute("viewBox",`0 0 ${W} ${H}`); s.setAttribute("role","img"); s.setAttribute("aria-label",`Mapa do raio de ${c0.nome}: cidades com distância em km`);
+    const add=(tg,a,txt,pai)=>{const e=document.createElementNS(NS,tg);for(const[k,v]of Object.entries(a))e.setAttribute(k,v);if(txt!=null)e.textContent=txt;(pai||s).append(e);return e;};
+    const defs=add("defs",{}), gid="rg"+c.code;
+    const rg=add("radialGradient",{id:gid},null,defs);
+    add("stop",{offset:"0%",style:"stop-color:rgba(var(--gold-rgb),.04)"},null,rg); add("stop",{offset:"100%",style:"stop-color:rgba(var(--gold-rgb),.2)"},null,rg);
+    // anéis de distância a cada 25 km (50 km quando o mapa é grande)
+    const passo=ext>220?50:25, aneis=[];
+    for(let k=passo;k<=ext;k+=passo){
+      add("circle",{cx,cy,r:k*sc,fill:"none",style:"stroke:rgba(var(--ink-rgb),.12)","stroke-dasharray":"2 5"});
+      const ang=Math.PI*0.75, lx=cx+Math.cos(ang)*k*sc, ly=cy+Math.sin(ang)*k*sc;
+      if(lx>8&&ly<H-8){const tx=k+(k+passo>ext?" km":""); add("text",{x:lx,y:ly,"text-anchor":"middle","font-size":11,class:"mono",style:"fill:var(--faint);paint-order:stroke;stroke:var(--panel);stroke-width:3px"},tx); aneis.push({x0:lx-tx.length*4-2,y0:ly-11,x1:lx+tx.length*4+2,y1:ly+3});}
+    }
+    // raio de cada localização dos conjuntos
     cs.forEach(e=>{const [x,y]=P(e.lat,e.lon);
-      add("circle",{cx:x,cy:y,r:e.raio_km*sc,style:"fill:rgba(var(--gold-rgb),.08);stroke:var(--gold)","stroke-width":1.5,"stroke-dasharray":"5 4"});
-      add("circle",{cx:x,cy:y,r:4,style:"fill:var(--gold)"});});
+      add("circle",{cx:x,cy:y,r:e.raio_km*sc,fill:`url(#${gid})`,style:"stroke:var(--gold)","stroke-width":2});
+      if(Math.hypot(x-cx,y-cy)>6){ add("path",{d:`M${x-6},${y} h12 M${x},${y-6} v12`,style:"stroke:var(--gold)","stroke-width":2});
+        const ly=Math.max(14,y-e.raio_km*sc-8), tx=`${e.tipo==="ponto"?"ponto":e.nome} · raio ${e.raio_km} km`; add("text",{x,y:ly,"text-anchor":"middle","font-size":12,"font-weight":700,style:"fill:var(--gold);paint-order:stroke;stroke:var(--panel);stroke-width:3px"},tx);
+        aneis.push({x0:x-tx.length*3.6,y0:ly-12,x1:x+tx.length*3.6,y1:ly+3},{x0:x-8,y0:y-8,x1:x+8,y1:y+8});}});
+    // cidades
     const maxPop=Math.max(1,...R.municipios.map(m=>m.pop));
-    // pontos: municípios do raio e cidades dos compradores fora dele
     const pontos=[];
-    R.municipios.forEach(m=>{const [x,y]=P(m.lat,m.lon); pontos.push({m,x,y,r:2+5*Math.sqrt(m.pop/maxPop),cor:m.compradores?"fill:var(--gold-2);stroke:var(--gold)":"fill:rgba(var(--ink-rgb),.28)",fora:false});});
-    R.fora.filter(m=>m.lat!=null).forEach(m=>{const [x,y]=P(m.lat,m.lon); if(x<0||y<0||x>W||y>H) return; pontos.push({m,x,y,r:3.5,cor:"fill:var(--bad)",fora:true});});
-    pontos.forEach(p=>{const e=add("circle",{cx:p.x,cy:p.y,r:p.r,style:p.cor,"stroke-width":1});
-      const ti=document.createElementNS(NS,"title"); ti.textContent=`${p.m.nome}${p.m.uf?" · "+p.m.uf:""} — ${p.m.compradores} comprador${p.m.compradores===1?"":"es"}${p.m.km!=null?" · "+p.m.km+" km":""}`; e.append(ti);});
-    // nomes: prioridade para quem tem comprador, depois população; sem sobrepor
-    const usados=pontos.map(p=>({x0:p.x-p.r,y0:p.y-p.r,x1:p.x+p.r,y1:p.y+p.r}));
-    const bate=b=>b.x0<2||b.x1>W-2||b.y0<2||b.y1>H-2||usados.some(u=>b.x0<u.x1&&b.x1>u.x0&&b.y0<u.y1&&b.y1>u.y0);
-    [...pontos].sort((a,b)=>(b.m.compradores-a.m.compradores)||((b.m.pop||0)-(a.m.pop||0))).forEach(p=>{
-      const txt=p.m.nome, fs=p.m.compradores?11:10, w=txt.length*fs*.56, h=fs+2;
-      const pos=[[p.x+p.r+3,p.y+fs*.35,"start"],[p.x-p.r-3,p.y+fs*.35,"end"],[p.x,p.y-p.r-4,"middle"],[p.x,p.y+p.r+fs+1,"middle"]];
+    R.municipios.forEach(m=>{const [x,y]=P(m.lat,m.lon); pontos.push({m,x,y,dentro:true,r:m.compradores?5+3*Math.sqrt(m.pop/maxPop):2.5+2*Math.sqrt(m.pop/maxPop)});});
+    R.fora.filter(m=>m.lat!=null).forEach(m=>{const [x,y]=P(m.lat,m.lon); if(x<6||y<6||x>W-6||y>H-6) return; pontos.push({m,x,y,dentro:false,r:5});});
+    const centroNome=NZn(c0.nome);
+    pontos.forEach(p=>{ if(NZn(p.m.nome)===centroNome) return;
+      const estilo=p.dentro?(p.m.compradores?"fill:var(--gold-2);stroke:var(--gold)":"fill:rgba(var(--ink-rgb),.3);stroke:none"):"fill:none;stroke:var(--bad)";
+      const e=add("circle",{cx:p.x,cy:p.y,r:p.r,style:estilo,"stroke-width":p.dentro?1:2});
+      const ti=document.createElementNS(NS,"title"); ti.textContent=`${p.m.nome}${p.m.uf?" · "+p.m.uf:""} — ${p.m.km!=null?p.m.km+" km · ":""}${p.m.compradores} comprador${p.m.compradores===1?"":"es"}${p.m.pop?" · "+kfmt(p.m.pop)+" hab.":""}`; e.append(ti);});
+    // centro
+    add("circle",{cx,cy,r:16,style:"fill:rgba(var(--gold-rgb),.18)"}); add("circle",{cx,cy,r:7,style:"fill:var(--gold);stroke:var(--bg)","stroke-width":2.5});
+    add("text",{x:cx+16,y:cy-12,"font-size":24,style:"fill:var(--fg);font-family:var(--f-display);paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round"},c0.nome);
+    // rótulos: nome + distância, sem sobrepor; prioridade para quem tem comprador e cidades maiores
+    const usados=[...aneis,{x0:cx-10,y0:cy-34,x1:cx+18+c0.nome.length*11.5,y1:cy+10},...pontos.map(p=>({x0:p.x-p.r,y0:p.y-p.r,x1:p.x+p.r,y1:p.y+p.r}))];
+    const bate=b=>b.x0<4||b.x1>W-4||b.y0<4||b.y1>H-4||usados.some(u=>b.x0<u.x1&&b.x1>u.x0&&b.y0<u.y1&&b.y1>u.y0);
+    [...pontos].filter(p=>NZn(p.m.nome)!==centroNome).sort((a,b)=>(b.m.compradores-a.m.compradores)||((b.m.pop||0)-(a.m.pop||0))).forEach(p=>{
+      const forte=p.m.compradores>0, fs=forte?14:12, sub=p.m.km!=null?p.m.km+" km"+(p.m.compradores?` · ${p.m.compradores} comp.`:""):"", w=Math.max(p.m.nome.length*fs*.58,sub.length*6.9,40)+4, h=fs+17;
+      const g=p.r+5;
+      const pos=[];[0,10,22].forEach(f=>{const G=g+f; pos.push([p.x+G,p.y-2,"start"],[p.x-G,p.y-2,"end"],[p.x,p.y-G-14,"middle"],[p.x,p.y+G+fs,"middle"],[p.x+G*.7,p.y-G*.7-8,"start"],[p.x+G*.7,p.y+G*.7+fs-2,"start"],[p.x-G*.7,p.y-G*.7-8,"end"],[p.x-G*.7,p.y+G*.7+fs-2,"end"]);});
       for(const [lx,ly,anc] of pos){
         const x0=anc==="start"?lx:anc==="end"?lx-w:lx-w/2, b={x0,y0:ly-fs,x1:x0+w,y1:ly-fs+h};
         if(bate(b)) continue;
         usados.push(b);
-        add("text",{x:lx,y:ly,"text-anchor":anc,"font-size":fs,style:`fill:${p.fora?"var(--bad)":p.m.compradores?"var(--fg)":"var(--muted)"};paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round`},txt);
+        const cor=!p.dentro?"var(--muted)":forte?"var(--fg)":"var(--muted)";
+        add("text",{x:lx,y:ly,"text-anchor":anc,"font-size":fs,"font-weight":forte?700:500,style:`fill:${cor};paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round`},p.m.nome);
+        if(sub) add("text",{x:lx,y:ly+14,"text-anchor":anc,"font-size":11,class:"mono",style:"fill:var(--faint);paint-order:stroke;stroke:var(--panel);stroke-width:3px"},sub);
         break;
       }});
+    // norte e escala
+    add("path",{d:`M${W-40},28 l9,24 l-9,-6 l-9,6 z`,style:"fill:var(--muted)"}); add("text",{x:W-40,y:68,"text-anchor":"middle","font-size":12,"font-weight":700,style:"fill:var(--muted)"},"N");
+    const esc=passo*2, ew=esc*sc;
+    add("path",{d:`M24,${H-24} h${ew} M24,${H-30} v12 M${24+ew/2},${H-27} v6 M${24+ew},${H-30} v12`,style:"stroke:var(--muted)","stroke-width":1.5,fill:"none"});
+    add("text",{x:24,y:H-36,"font-size":11,class:"mono",style:"fill:var(--faint)"},"0"); add("text",{x:24+ew,y:H-36,"text-anchor":"middle","font-size":11,class:"mono",style:"fill:var(--faint)"},esc+" km");
     box.append(s);
-    box.append(el("div",{class:"lg",style:"margin-top:8px"},el("span",{},el("i",{style:"background:var(--gold-2);border-radius:50%"}),"com compradores"),el("span",{},el("i",{style:"background:rgba(var(--ink-rgb),.28);border-radius:50%"}),"sem compradores"),el("span",{},el("i",{style:"background:var(--bad);border-radius:50%"}),"compradores fora do raio")));
+    box.append(el("div",{class:"lg",style:"margin-top:8px"},
+      el("span",{},el("i",{style:"background:var(--gold-2);border-radius:50%"}),"no raio, com compradores"),
+      el("span",{},el("i",{style:"background:rgba(var(--ink-rgb),.3);border-radius:50%"}),"no raio, sem compradores"),
+      el("span",{},el("i",{style:"background:transparent;border:2px solid var(--bad);border-radius:50%;box-sizing:border-box"}),"compradores de fora do raio"),
+      el("span",{},el("i",{style:"background:transparent;border:2px solid var(--gold);border-radius:50%;box-sizing:border-box"}),"raio dos conjuntos")));
   } else box.append(el("p",{class:"note",text:"A segmentação desta praça não usa raio (estado inteiro ou sem localização)."}));
   grid.append(box);
   // números e lista

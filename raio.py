@@ -48,6 +48,11 @@ for c in d['cidades']:
       e=centros.setdefault(('estado',rg.get('name')),{'tipo':'estado','nome':rg.get('name'),'uf':UF(rg.get('name')),'raio_km':None,'lat':None,'lon':None,'conjuntos':0,'ativos':0,'gasto':0})
       e['conjuntos']+=1; e['ativos']+=info.get('effective_status')=='ACTIVE'; e['gasto']+=gasto_do_conjunto.get(aid,0)
   cs=sorted(centros.values(),key=lambda e:-e['gasto'])
+  pr=PR[c['code']]
+  mev=por_nome.get((NZ(c['nome']),c['uf'])) or next((m for m in MUN if NZ(m['nome'])==c['code']),None)
+  if mev: ev={'nome':mev['nome'],'uf':mev['uf'],'lat':mev['lat'],'lon':mev['lon']}
+  elif c['code']=='PARAGUAI': ev={'nome':'Ciudad del Este','uf':'PY','lat':EXTERIOR['CIUDADDELESTE'][0],'lon':EXTERIOR['CIUDADDELESTE'][1]}
+  else: ev={'nome':cs[0]['nome'],'uf':cs[0]['uf'],'lat':cs[0]['lat'],'lon':cs[0]['lon']} if cs else None
   # municípios dentro de algum raio
   dentro={}
   for e in cs:
@@ -64,13 +69,14 @@ for c in d['cidades']:
     ct=x.get('contact') or {}; comp[(NZ(ct.get('address_city')),(ct.get('address_state') or '').upper()[:2])]+=1
   muns=[]
   for (nome,uf),(km,m) in dentro.items():
-    muns.append({'nome':nome,'uf':uf,'km':round(km),'pop':m['pop'],'lat':round(m['lat'],3),'lon':round(m['lon'],3),'compradores':comp.pop((NZ(nome),uf),0)})
+    km_ev=dist(ev['lat'],ev['lon'],m['lat'],m['lon']) if ev and ev['lat'] is not None else km
+    muns.append({'nome':nome,'uf':uf,'km':round(km_ev),'pop':m['pop'],'lat':round(m['lat'],3),'lon':round(m['lon'],3),'compradores':comp.pop((NZ(nome),uf),0)})
   muns.sort(key=lambda r:(-r['compradores'],-r['pop']))
   sem=comp.pop(('',''),0)
   fora=[]
   for (nz,uf),n in comp.most_common():
-    m=por_nome.get((nz,uf)); fora.append({'nome':m['nome'] if m else nz.title(),'uf':uf,'compradores':n,'pop':m and m['pop'],'lat':m and round(m['lat'],3),'lon':m and round(m['lon'],3),'km':round(dist(cs[0]['lat'],cs[0]['lon'],m['lat'],m['lon'])) if (m and cs and cs[0]['lat'] is not None) else None})
-  c['raio']={'centros':cs,'municipios':muns,'fora':fora,'sem_cidade':sem}
+    m=por_nome.get((nz,uf)); fora.append({'nome':m['nome'] if m else nz.title(),'uf':uf,'compradores':n,'pop':m and m['pop'],'lat':m and round(m['lat'],3),'lon':m and round(m['lon'],3),'km':round(dist(ev['lat'],ev['lon'],m['lat'],m['lon'])) if (m and ev and ev['lat'] is not None) else None})
+  c['raio']={'evento':ev,'centros':cs,'municipios':muns,'fora':fora,'sem_cidade':sem}
 json.dump(d,open('data.json','w'),ensure_ascii=False)
 for c in d['cidades']:
   r=c['raio']; dentro_c=sum(m['compradores'] for m in r['municipios']); fora_c=sum(m['compradores'] for m in r['fora'])
