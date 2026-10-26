@@ -504,14 +504,14 @@ render();
   async function checar(recarregar){
     try{
       const r=await fetch("/api/atualizar",{cache:"no-store"}); const j=await r.json();
-      if(j.erro){estado(j.erro,false); return;}
+      if(j.erro){ if(!recarregar){btn.hidden=true; msg.textContent="";} else estado(j.erro,false); return;}
       if(j.rodando){estado("Atualizando os dados… leva uns 5 minutos. A página recarrega sozinha.",true); clearTimeout(timer); timer=setTimeout(()=>checar(true),20000);}
       else if(recarregar){
         const nova=j.run&&Date.parse(j.run.inicio)>=pedido-60000;
         if(!nova){timer=setTimeout(()=>checar(true),10000); return;}
         if(j.run.conclusion==="success") location.reload(); else estado("A última atualização falhou. Tente de novo.",false); }
       else estado("",false);
-    }catch(e){estado("Sem conexão com o servidor de atualização.",false);}
+    }catch(e){ if(!recarregar){btn.hidden=true; msg.textContent="";} else estado("Sem conexão com o servidor de atualização.",false);}
   }
   btn.addEventListener("click",async()=>{
     estado("Pedindo a atualização…",true); pedido=Date.now();
