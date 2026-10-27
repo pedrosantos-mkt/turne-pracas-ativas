@@ -21,6 +21,12 @@ for s in subs:
   if s.get('email'): by[s['email'].lower().strip()].append(s)
 def norm_page(u):
   u=(u or '').split('?')[0].split('#')[0].replace('https://','').replace('http://','').rstrip('/')
+  # Convocação Nacional: o anúncio leva para /l/<página> e o botão leva para /<página>, onde fica o formulário.
+  # É o mesmo funil, então as duas viram uma linha só (e o domínio sem "ricardonunes." também).
+  if u.endswith('convocacaonacional.com.br') or 'convocacaonacional.com.br/' in u:
+    host,_,path=u.partition('/')
+    if path.startswith('l/'): path=path[2:]
+    u='ricardonunes.convocacaonacional.com.br/'+path if path else 'ricardonunes.convocacaonacional.com.br'
   return u or '(sem página)'
 def attribute(email,city,ts):
   cand=[s for s in by.get(email,[]) if any(k in NZ(s['form'])+NZ(s['page']) for k in CITYK[city])]
