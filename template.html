@@ -269,7 +269,7 @@ footer{margin-top:28px;font-size:12px;color:var(--faint);line-height:1.6;max-wid
 const DATA = __DATA__;
 const META = {cac:400, qual:.5, cacq:800};
 // metas de cada etapa do funil, por praça
-const META_F = {cpm:36, ctr:.01, connect:.75, chk:.12, compraVisita:.024, conv:.40, vendas:250};
+const META_F = {cpm:36, ctr:.01, connect:.75, chk:.12, compraVisita:.024, conv:.40, ingressos:250};
 const HOJE = new Date(DATA.hoje + "T12:00:00");
 
 const brl = (v,d=0) => v==null||!isFinite(v) ? "—" : "R$ " + v.toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -408,7 +408,7 @@ function chart(c){
 
 
 // ritmo: o que a praça está fazendo (média dos últimos 7 dias) × o que precisa fazer por dia até o evento
-const META_RITMO={vendas:250, qual:125};   // 125 = 50% de 250
+const META_RITMO={ingressos:250, qual:125};   // meta de 250 ingressos por praça; qualificados 125 = 50% de 250
 function painelRitmo(c){
   const k=c.k, wrap=el("div",{});
   const diasAte=Math.round((new Date(c.evento+"T12:00:00")-HOJE)/864e5);
@@ -418,11 +418,11 @@ function painelRitmo(c){
   const rest=Math.max(1,diasAte);
   const porDia=Object.fromEntries(c.daily.map(r=>[r[0],r]));
   const iso=x=>x.toISOString().slice(0,10);
-  let v7=0,q7=0,s7=0;
-  for(let i=0;i<7;i++){ const r=porDia[iso(new Date(HOJE.getTime()-i*864e5))]; if(r){ v7+=r[6]||0; q7+=r[3]||0; s7+=r[1]||0; } }
-  const ritmoV=v7/7, ritmoQ=q7/7, gastoDia=s7/7, cpa7=v7?s7/v7:k.cac;
+  let v7=0,q7=0,s7=0,i7=0;
+  for(let i=0;i<7;i++){ const r=porDia[iso(new Date(HOJE.getTime()-i*864e5))]; if(r){ v7+=r[6]||0; q7+=r[3]||0; s7+=r[1]||0; i7+=r[2]||0; } }
+  const ritmoV=v7/7, ritmoI=i7/7, ritmoQ=q7/7, gastoDia=s7/7, cpi7=i7?s7/i7:k.cac;
   const linhas=[
-    {tit:"Vendas",verbo:"vender",atual:k.vendas,meta:META_RITMO.vendas,ritmo:ritmoV,fmt:x=>x.toLocaleString("pt-BR",{maximumFractionDigits:1})},
+    {tit:"Ingressos",verbo:"vender",atual:k.ing,meta:META_RITMO.ingressos,ritmo:ritmoI,fmt:x=>x.toLocaleString("pt-BR",{maximumFractionDigits:1})},
     {tit:"Qualificados (CP2/CP3)",verbo:"trazer",atual:k.qual,meta:META_RITMO.qual,ritmo:ritmoQ,fmt:x=>x.toLocaleString("pt-BR",{maximumFractionDigits:1})},
   ];
   const grid=el("div",{class:"ritmo-grid"});
@@ -443,46 +443,46 @@ function painelRitmo(c){
     grid.append(card);
   });
   // verba
-  const vendasFalta=Math.max(0,META_RITMO.vendas-k.vendas), verbaPrecisa=vendasFalta/rest*cpa7;
+  const vendasFalta=Math.max(0,META_RITMO.ingressos-k.ing), verbaPrecisa=vendasFalta/rest*cpi7;
   const okV=gastoDia>=verbaPrecisa;
   grid.append(el("div",{class:"ritmo-card"},
     el("div",{class:"ritmo-h"},el("span",{class:"cap",text:"Investimento"}),el("span",{class:"pill "+(vendasFalta?(okV?"ok":"warn"):"ok"),text:vendasFalta?(okV?"verba suficiente":"verba abaixo do necessário"):"meta batida"})),
     el("div",{class:"ritmo-nums"},
       el("div",{},el("b",{class:"num",text:brl(gastoDia)+"/dia"}),el("span",{text:"gasto atual"})),
-      el("div",{},el("b",{class:"num",text:vendasFalta?brl(verbaPrecisa)+"/dia":"—"}),el("span",{text:"necessário ao CPA atual"}))),
-    el("p",{class:"ritmo-txt"},`CPA dos últimos 7 dias: `,el("b",{class:"num",text:brl(cpa7)}),vendasFalta?`. Para as ${int(vendasFalta)} vendas que faltam, são cerca de ${brl(vendasFalta*cpa7)} até o evento.`:".")));
+      el("div",{},el("b",{class:"num",text:vendasFalta?brl(verbaPrecisa)+"/dia":"—"}),el("span",{text:"necessário ao custo atual por ingresso"}))),
+    el("p",{class:"ritmo-txt"},`Custo por ingresso nos últimos 7 dias: `,el("b",{class:"num",text:brl(cpi7)}),vendasFalta?`. Para os ${int(vendasFalta)} ingressos que faltam, são cerca de ${brl(vendasFalta*cpi7)} até o evento.`:".")));
   wrap.append(grid);
   // cenário: como a praça termina se mantiver a média dos últimos 7 dias
-  let i7=0; for(let i=0;i<7;i++){ const r=porDia[iso(new Date(HOJE.getTime()-i*864e5))]; if(r) i7+=r[2]||0; }
   const ingPorVenda=v7?i7/v7:(k.vendas?k.ing/k.vendas:1);
-  const vendasFim=k.vendas+ritmoV*rest, ingFim=k.ing+ritmoV*rest*ingPorVenda, qualFim=k.qual+ritmoQ*rest, gastoFim=k.spend+gastoDia*rest;
+  const vendasFim=k.vendas+ritmoV*rest, ingFim=k.ing+ritmoI*rest, qualFim=k.qual+ritmoQ*rest, gastoFim=k.spend+gastoDia*rest;
   const cen=el("div",{class:"cenario"},
     el("div",{class:"cenario-t"},el("span",{class:"cap",text:"Cenário no ritmo atual"}),
       el("small",{text:`se mantiver a média dos últimos 7 dias até ${dBR(c.evento)} · ${ingPorVenda.toLocaleString("pt-BR",{maximumFractionDigits:2})} ingresso por venda`})),
     el("div",{class:"cenario-k"},
-      ...[["Vendas",int(vendasFim),`meta 250 · ${pct(vendasFim/META_RITMO.vendas,0)}`,tone(vendasFim,META_RITMO.vendas,false)],
-          ["Ingressos",int(ingFim),`hoje ${int(k.ing)} · +${int(ingFim-k.ing)} até o evento`,""],
+      ...[["Ingressos",int(ingFim),`meta 250 · ${pct(ingFim/META_RITMO.ingressos,0)} · hoje ${int(k.ing)}`,tone(ingFim,META_RITMO.ingressos,false)],
+          ["Vendas",int(vendasFim),`hoje ${int(k.vendas)} · +${int(vendasFim-k.vendas)} até o evento`,""],
           ["Qualificados",int(qualFim),`meta 125 · ${pct(qualFim/META_RITMO.qual,0)}`,tone(qualFim,META_RITMO.qual,false)],
-          ["Investimento total",brl(gastoFim),`CPA ${brl(div(gastoFim,vendasFim))} · CAC qualif. ${brl(div(gastoFim,qualFim))}`,""]]
+          ["Investimento total",brl(gastoFim),`${brl(div(gastoFim,ingFim))} por ingresso · CAC qualif. ${brl(div(gastoFim,qualFim))}`,""]]
         .map(([l,v,s,tn])=>el("div",{},el("span",{text:l}),el("b",{class:"num "+tn,text:v}),el("small",{text:s})))));
   wrap.append(cen);
-  wrap.append(ritmoGrafico(c,rest,ritmoV));
+  wrap.append(ritmoGrafico(c,rest,ritmoI));
   return wrap;
 }
 // vendas acumuladas, o caminho até 250 e a projeção no ritmo atual
 function ritmoGrafico(c,rest,ritmoV){
   const box=el("div",{class:"chart",style:"margin-top:14px"});
   const rows=c.daily; if(!rows.length) return box;
-  let acc=0; const pts=rows.map(r=>{acc+=r[6]||0; return [r[0],acc];});
+  // começa do que já tinha sido vendido antes do primeiro dia de campanha, para fechar no total da praça
+  let acc=c.k.ing-rows.reduce((a,r)=>a+(r[2]||0),0); const pts=rows.map(r=>{acc+=r[2]||0; return [r[0],acc];});
   const ini=new Date(rows[0][0]+"T12:00:00"), fim=new Date(c.evento+"T12:00:00");
   const W=Math.max(320,document.getElementById("detail").clientWidth-60), H=220, P={l:44,r:70,t:16,b:26};
-  const dx=d=>P.l+(W-P.l-P.r)*((d-ini)/(fim-ini||1)), maxY=Math.max(META_RITMO.vendas*1.05, acc+ritmoV*rest);
+  const dx=d=>P.l+(W-P.l-P.r)*((d-ini)/(fim-ini||1)), maxY=Math.max(META_RITMO.ingressos*1.05, acc+ritmoV*rest);
   const dy=v=>P.t+(H-P.t-P.b)*(1-v/maxY);
   const NS="http://www.w3.org/2000/svg", s=document.createElementNS(NS,"svg");
-  s.setAttribute("viewBox",`0 0 ${W} ${H}`); s.setAttribute("role","img"); s.setAttribute("aria-label","Vendas acumuladas, caminho até a meta e projeção");
+  s.setAttribute("viewBox",`0 0 ${W} ${H}`); s.setAttribute("role","img"); s.setAttribute("aria-label","Ingressos acumulados, caminho até a meta e projeção");
   const add=(tg,a,txt)=>{const e=document.createElementNS(NS,tg);for(const[k2,v]of Object.entries(a))e.setAttribute(k2,v);if(txt!=null)e.textContent=txt;s.append(e);return e;};
   [0,.5,1].forEach(f=>{const v=Math.round(maxY*f/10)*10, y=dy(v); add("line",{x1:P.l,x2:W-P.r,y1:y,y2:y,style:"stroke:rgba(var(--ink-rgb),.08)"}); add("text",{x:P.l-8,y:y+4,"text-anchor":"end","font-size":10,style:"fill:var(--faint)"},int(v));});
-  const ym=dy(META_RITMO.vendas); add("line",{x1:P.l,x2:W-P.r,y1:ym,y2:ym,style:"stroke:var(--gold)","stroke-dasharray":"2 4"}); add("text",{x:W-P.r+6,y:ym+4,"font-size":11,"font-weight":700,style:"fill:var(--gold)"},"meta 250");
+  const ym=dy(META_RITMO.ingressos); add("line",{x1:P.l,x2:W-P.r,y1:ym,y2:ym,style:"stroke:var(--gold)","stroke-dasharray":"2 4"}); add("text",{x:W-P.r+6,y:ym+4,"font-size":11,"font-weight":700,style:"fill:var(--gold)"},"meta 250");
   add("path",{d:"M"+pts.map(([d,v])=>`${dx(new Date(d+"T12:00:00"))},${dy(v)}`).join("L"),fill:"none",style:"stroke:var(--fg)","stroke-width":2});
   const hx=dx(HOJE), hy=dy(acc), ex=dx(fim);
   add("path",{d:`M${hx},${hy}L${ex},${ym}`,fill:"none",style:"stroke:var(--gold)","stroke-width":1.5,"stroke-dasharray":"6 4"});
@@ -492,7 +492,7 @@ function ritmoGrafico(c,rest,ritmoV){
   add("line",{x1:ex,x2:ex,y1:P.t,y2:H-P.b,style:"stroke:rgba(var(--ink-rgb),.25)"}); add("text",{x:ex,y:H-8,"text-anchor":"middle","font-size":10,style:"fill:var(--muted)"},"evento "+dBR(c.evento));
   add("text",{x:dx(ini),y:H-8,"font-size":10,style:"fill:var(--faint)"},dBR(rows[0][0]));
   box.append(s);
-  box.append(el("div",{class:"lg",style:"margin-top:6px"},el("span",{},el("i",{style:"background:var(--fg)"}),"vendas acumuladas"),el("span",{},el("i",{style:"background:var(--gold)"}),"caminho até a meta"),el("span",{},el("i",{style:"background:var(--bad)"}),"projeção no ritmo atual")));
+  box.append(el("div",{class:"lg",style:"margin-top:6px"},el("span",{},el("i",{style:"background:var(--fg)"}),"ingressos acumulados"),el("span",{},el("i",{style:"background:var(--gold)"}),"caminho até a meta"),el("span",{},el("i",{style:"background:var(--bad)"}),"projeção no ritmo atual")));
   return box;
 }
 
@@ -620,7 +620,7 @@ function renderDetail(c){
     rate(pct(k.chk,1),"Visita → checkout","meta 12%",tone(k.chk,META_F.chk,false)),
     stage("Checkouts",int(k.ic),"pixel"),
     rate(pct(conv,0),"Conversão","meta 40%",tone(conv,META_F.conv,false)),
-    stage("Vendas",int(k.vendas),int(k.ing)+" ingressos · "+pct(compraVisita,1)+" das visitas",true,"meta 250 vendas · compra/visita 2,4%",tone(k.vendas,META_F.vendas,false)),
+    stage("Ingressos",int(k.ing),int(k.vendas)+" vendas · compra/visita "+pct(compraVisita,1),true,"meta 250 ingressos · compra/visita 2,4%",tone(k.ing,META_F.ingressos,false)),
     rate(pct(k.txq,0),"Qualificação","meta 50%",tone(k.txq,META.qual,false)),
     stage("Qualificados",int(k.qualEst),"estimado",true));
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Funil da praça"}),el("small",{text:"Meta Ads até checkout; vendas, ingressos e qualificação pela Guru · conversão = vendas ÷ checkouts"})),f));
