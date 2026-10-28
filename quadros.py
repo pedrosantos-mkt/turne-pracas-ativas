@@ -28,7 +28,7 @@ for c in d['cidades']:
     nome={a['id']:a['name'] for a in ads.get(cid,{}).get('ads',[])}
     for a in ads.get(cid,{}).get('ads',[]):
       cr_=a.get('creative') or {}
-      link=a.get('preview_shareable_link') or cr_.get('instagram_permalink_url')
+      link=cr_.get('instagram_permalink_url') or a.get('preview_shareable_link')  # Instagram primeiro; prévia do Meta só se não houver post
       if link and a['name'] not in prev: prev[a['name']]={'prev':link,'ad':a['id']}
     for r in ads.get(cid,{}).get('ins',[]):
       pag[url.get(r['ad_id'],'(sem URL)')]+=media(r); cre[nome.get(r['ad_id'],r['ad_id'])]+=media(r)

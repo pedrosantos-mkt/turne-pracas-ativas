@@ -211,6 +211,20 @@ table.cre-t td.pg{width:40%}
 .raio-kpis span{font-size:12px;color:var(--muted)}
 .raio-h5{margin:4px 0 0;font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--fg)}
 table.raio-t{min-width:420px}
+.ritmo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.ritmo-grid{grid-template-columns:1fr}}
+.ritmo-card{border:1px solid var(--line-soft);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;background:rgba(var(--shade-rgb),.12)}
+.ritmo-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ritmo-nums{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ritmo-nums div{display:flex;flex-direction:column;gap:2px}
+.ritmo-nums b{font-family:var(--f-display);font-size:26px;font-weight:400;line-height:1.1}
+.ritmo-nums span{font-size:12px;color:var(--muted)}
+.ritmo-bar{position:relative;height:8px;border-radius:99px;background:var(--line-soft);overflow:hidden}
+.ritmo-bar i{position:absolute;top:0;bottom:0;display:block}
+.ritmo-bar .real{left:0;background:var(--gold);border-radius:99px}
+.ritmo-bar .proj{background:repeating-linear-gradient(90deg,rgba(var(--gold-rgb),.5) 0 4px,transparent 4px 7px)}
+.ritmo-txt{margin:0;font-size:12.5px;color:var(--muted);line-height:1.5}
+.ritmo-txt b{color:var(--fg)}
 footer{margin-top:28px;font-size:12px;color:var(--faint);line-height:1.6;max-width:90ch}
 </style>
 
@@ -382,6 +396,82 @@ function chart(c){
 }
 
 
+
+// ritmo: o que a praça está fazendo (média dos últimos 7 dias) × o que precisa fazer por dia até o evento
+const META_RITMO={vendas:250, qual:125};   // 125 = 50% de 250
+function painelRitmo(c){
+  const k=c.k, wrap=el("div",{});
+  const diasAte=Math.round((new Date(c.evento+"T12:00:00")-HOJE)/864e5);
+  wrap.append(el("div",{class:"sec-t"},el("h4",{text:"Ritmo até o evento"}),
+    el("small",{text:diasAte<0?"evento realizado":`faltam ${diasAte} dia${diasAte===1?"":"s"} · ritmo atual = média dos últimos 7 dias, incluindo hoje`})));
+  if(diasAte<0){ wrap.append(el("p",{class:"note",text:"O evento desta praça já aconteceu."})); return wrap; }
+  const rest=Math.max(1,diasAte);
+  const porDia=Object.fromEntries(c.daily.map(r=>[r[0],r]));
+  const iso=x=>x.toISOString().slice(0,10);
+  let v7=0,q7=0,s7=0;
+  for(let i=0;i<7;i++){ const r=porDia[iso(new Date(HOJE.getTime()-i*864e5))]; if(r){ v7+=r[6]||0; q7+=r[3]||0; s7+=r[1]||0; } }
+  const ritmoV=v7/7, ritmoQ=q7/7, gastoDia=s7/7, cpa7=v7?s7/v7:k.cac;
+  const linhas=[
+    {tit:"Vendas",verbo:"vender",atual:k.vendas,meta:META_RITMO.vendas,ritmo:ritmoV,fmt:x=>x.toLocaleString("pt-BR",{maximumFractionDigits:1})},
+    {tit:"Qualificados (CP2/CP3)",verbo:"trazer",atual:k.qual,meta:META_RITMO.qual,ritmo:ritmoQ,fmt:x=>x.toLocaleString("pt-BR",{maximumFractionDigits:1})},
+  ];
+  const grid=el("div",{class:"ritmo-grid"});
+  linhas.forEach(L=>{
+    const falta=Math.max(0,L.meta-L.atual), precisa=falta/rest, proj=L.atual+L.ritmo*rest;
+    const ok=falta===0||L.ritmo>=precisa, perto=!ok&&L.ritmo>=precisa*.8, tom=ok?"ok":perto?"warn":"bad";
+    const vezes=L.ritmo>0?precisa/L.ritmo:null;
+    const card=el("div",{class:"ritmo-card"},
+      el("div",{class:"ritmo-h"},el("span",{class:"cap",text:L.tit}),el("span",{class:"pill "+tom,text:falta===0?"meta batida":ok?"no ritmo":perto?"perto do ritmo":"abaixo do ritmo"})),
+      el("div",{class:"ritmo-nums"},
+        el("div",{},el("b",{class:"num "+tom,text:L.fmt(L.ritmo)+"/dia"}),el("span",{text:"ritmo atual"})),
+        el("div",{},el("b",{class:"num",text:falta?L.fmt(precisa)+"/dia":"—"}),el("span",{text:"ritmo necessário"}))),
+      el("div",{class:"ritmo-bar"},el("i",{class:"real",style:`width:${Math.min(100,L.atual/L.meta*100)}%`}),
+        el("i",{class:"proj",style:`left:${Math.min(100,L.atual/L.meta*100)}%;width:${Math.max(0,Math.min(100,proj/L.meta*100)-Math.min(100,L.atual/L.meta*100))}%`})),
+      el("p",{class:"ritmo-txt"},
+        el("b",{class:"num",text:int(L.atual)}),` de ${int(L.meta)} · faltam ${int(falta)}. `,
+        falta? `No ritmo atual, chega a ${int(proj)} no evento (${pct(proj/L.meta,0)} da meta)`+(vezes&&vezes>1.05?`; precisa ${L.verbo} ${vezes.toLocaleString("pt-BR",{maximumFractionDigits:1})}× o ritmo de hoje.`:".") : "Meta já alcançada."));
+    grid.append(card);
+  });
+  // verba
+  const vendasFalta=Math.max(0,META_RITMO.vendas-k.vendas), verbaPrecisa=vendasFalta/rest*cpa7;
+  const okV=gastoDia>=verbaPrecisa;
+  grid.append(el("div",{class:"ritmo-card"},
+    el("div",{class:"ritmo-h"},el("span",{class:"cap",text:"Investimento"}),el("span",{class:"pill "+(vendasFalta?(okV?"ok":"warn"):"ok"),text:vendasFalta?(okV?"verba suficiente":"verba abaixo do necessário"):"meta batida"})),
+    el("div",{class:"ritmo-nums"},
+      el("div",{},el("b",{class:"num",text:brl(gastoDia)+"/dia"}),el("span",{text:"gasto atual"})),
+      el("div",{},el("b",{class:"num",text:vendasFalta?brl(verbaPrecisa)+"/dia":"—"}),el("span",{text:"necessário ao CPA atual"}))),
+    el("p",{class:"ritmo-txt"},`CPA dos últimos 7 dias: `,el("b",{class:"num",text:brl(cpa7)}),vendasFalta?`. Para as ${int(vendasFalta)} vendas que faltam, são cerca de ${brl(vendasFalta*cpa7)} até o evento.`:".")));
+  wrap.append(grid);
+  wrap.append(ritmoGrafico(c,rest,ritmoV));
+  return wrap;
+}
+// vendas acumuladas, o caminho até 250 e a projeção no ritmo atual
+function ritmoGrafico(c,rest,ritmoV){
+  const box=el("div",{class:"chart",style:"margin-top:14px"});
+  const rows=c.daily; if(!rows.length) return box;
+  let acc=0; const pts=rows.map(r=>{acc+=r[6]||0; return [r[0],acc];});
+  const ini=new Date(rows[0][0]+"T12:00:00"), fim=new Date(c.evento+"T12:00:00");
+  const W=Math.max(320,document.getElementById("detail").clientWidth-60), H=220, P={l:44,r:70,t:16,b:26};
+  const dx=d=>P.l+(W-P.l-P.r)*((d-ini)/(fim-ini||1)), maxY=Math.max(META_RITMO.vendas*1.05, acc+ritmoV*rest);
+  const dy=v=>P.t+(H-P.t-P.b)*(1-v/maxY);
+  const NS="http://www.w3.org/2000/svg", s=document.createElementNS(NS,"svg");
+  s.setAttribute("viewBox",`0 0 ${W} ${H}`); s.setAttribute("role","img"); s.setAttribute("aria-label","Vendas acumuladas, caminho até a meta e projeção");
+  const add=(tg,a,txt)=>{const e=document.createElementNS(NS,tg);for(const[k2,v]of Object.entries(a))e.setAttribute(k2,v);if(txt!=null)e.textContent=txt;s.append(e);return e;};
+  [0,.5,1].forEach(f=>{const v=Math.round(maxY*f/10)*10, y=dy(v); add("line",{x1:P.l,x2:W-P.r,y1:y,y2:y,style:"stroke:rgba(var(--ink-rgb),.08)"}); add("text",{x:P.l-8,y:y+4,"text-anchor":"end","font-size":10,style:"fill:var(--faint)"},int(v));});
+  const ym=dy(META_RITMO.vendas); add("line",{x1:P.l,x2:W-P.r,y1:ym,y2:ym,style:"stroke:var(--gold)","stroke-dasharray":"2 4"}); add("text",{x:W-P.r+6,y:ym+4,"font-size":11,"font-weight":700,style:"fill:var(--gold)"},"meta 250");
+  add("path",{d:"M"+pts.map(([d,v])=>`${dx(new Date(d+"T12:00:00"))},${dy(v)}`).join("L"),fill:"none",style:"stroke:var(--fg)","stroke-width":2});
+  const hx=dx(HOJE), hy=dy(acc), ex=dx(fim);
+  add("path",{d:`M${hx},${hy}L${ex},${ym}`,fill:"none",style:"stroke:var(--gold)","stroke-width":1.5,"stroke-dasharray":"6 4"});
+  const py=dy(acc+ritmoV*rest); add("path",{d:`M${hx},${hy}L${ex},${py}`,fill:"none",style:"stroke:var(--bad)","stroke-width":1.5,"stroke-dasharray":"2 3"});
+  add("circle",{cx:hx,cy:hy,r:4,style:"fill:var(--fg)"});
+  add("text",{x:ex+6,y:py+4,"font-size":11,style:"fill:var(--bad)"},int(acc+ritmoV*rest));
+  add("line",{x1:ex,x2:ex,y1:P.t,y2:H-P.b,style:"stroke:rgba(var(--ink-rgb),.25)"}); add("text",{x:ex,y:H-8,"text-anchor":"middle","font-size":10,style:"fill:var(--muted)"},"evento "+dBR(c.evento));
+  add("text",{x:dx(ini),y:H-8,"font-size":10,style:"fill:var(--faint)"},dBR(rows[0][0]));
+  box.append(s);
+  box.append(el("div",{class:"lg",style:"margin-top:6px"},el("span",{},el("i",{style:"background:var(--fg)"}),"vendas acumuladas"),el("span",{},el("i",{style:"background:var(--gold)"}),"caminho até a meta"),el("span",{},el("i",{style:"background:var(--bad)"}),"projeção no ritmo atual")));
+  return box;
+}
+
 const NZn=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z]/g,'');
 function painelRaio(c){
   const R=c.raio, cs=R.centros.filter(e=>e.lat!=null&&e.raio_km);
@@ -522,6 +612,9 @@ function renderDetail(c){
       kpi("Ritmo de ingressos",(k.pacing).toLocaleString("pt-BR",{maximumFractionDigits:1})+"/dia","média desde o início"),
       kpi("Cortesias",int(k.cort),"fora do CAC"))));
 
+  // ritmo até o evento
+  d.append(painelRitmo(c));
+
   // qualificação
   const t=tone(k.txq,META.qual,false);
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Qualificação dos compradores"}),el("small",{text:"meta 50%"})),
@@ -597,7 +690,7 @@ function renderDetail(c){
   const nomeCriativo=x=>{const w=el("div",{class:"cre-nome"});
     if(x.thumb){const img=el("img",{src:x.thumb,alt:"",loading:"lazy",referrerpolicy:"no-referrer"}); img.addEventListener("error",()=>img.remove()); w.append(img);}
     w.append(el("span",{text:x.nome}));
-    if(x.prev){const a=el("a",{class:"ver",href:x.prev,target:"_blank",rel:"noopener",title:"Ver o anúncio","aria-label":"Ver o anúncio "+x.nome}); a.innerHTML=OLHO; w.append(a);}
+    if(x.prev){const a=el("a",{class:"ver",href:x.prev,target:"_blank",rel:"noopener",title:"Ver no Instagram","aria-label":"Ver o criativo no Instagram: "+x.nome}); a.innerHTML=OLHO; w.append(a);}
     return w;};
   const MIN=Math.max(150,k.spend*0.01);
   const cr=c.criativos.map(r=>({nome:r.nome,prev:r.prev,thumb:r.thumb,bm:r.bm,...rowCalc(r)})).filter(r=>r.sp>=MIN);
