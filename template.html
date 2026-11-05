@@ -235,6 +235,15 @@ table.raio-t{min-width:420px}
 .cenario-k span{font-size:12px;font-weight:600}
 .cenario-k b{font-family:var(--f-display);font-size:30px;font-weight:400;line-height:1.1}
 .cenario-k small{font-size:12px;color:var(--muted)}
+.simples{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:14px}
+.simples>div{border:1px solid var(--line-soft);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;background:rgba(var(--shade-rgb),.12)}
+.simples>div.tot{border-color:var(--gold);background:var(--gold-soft)}
+.simples span{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.simples b{font-family:var(--f-display);font-size:40px;font-weight:400;line-height:1.05}
+.simples .tot b{color:var(--gold)}
+.simples small{font-size:12px;color:var(--faint)}
+.simples .op{font-style:normal;font-size:26px;color:var(--faint);text-align:center}
+@media (max-width:640px){.simples{grid-template-columns:1fr}.simples .op{display:none}}
 footer{margin-top:28px;font-size:12px;color:var(--faint);line-height:1.6;max-width:90ch}
 </style>
 
@@ -608,6 +617,15 @@ function renderDetail(c){
       el("h2",{},document.createTextNode(c.nome+" "),el("em",{class:"g",text:"em "+dBR(c.evento)})),
       el("p",{text:`Campanha desde ${dBR(c.inicio)} · ${k.diasCorr} dias rodando · `+(dr===0?"evento hoje":dr>0?`faltam ${dr} dias`:"evento realizado")})),
     el("span",{class:"tag",text:c.camps.filter(x=>x.status==="ACTIVE").length+" campanhas ativas"})));
+
+  // visão simples: ingressos vendidos + cortesias = total de pessoas com ingresso
+  d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Visão simples"}),el("small",{text:"vendas aprovadas na Guru · cortesia = oferta de cortesia ou valor R$ 0"})),
+    el("div",{class:"simples"},
+      el("div",{},el("span",{text:"Ingressos vendidos"}),el("b",{class:"num",text:int(k.ing)}),el("small",{text:`${int(k.vendas)} venda${k.vendas===1?"":"s"}`})),
+      el("i",{class:"op","aria-hidden":"true",text:"+"}),
+      el("div",{},el("span",{text:"Cortesias"}),el("b",{class:"num",text:int(k.cort)}),el("small",{text:"sem custo"})),
+      el("i",{class:"op","aria-hidden":"true",text:"="}),
+      el("div",{class:"tot"},el("span",{text:"Total com ingresso"}),el("b",{class:"num",text:int(k.ing+k.cort)}),el("small",{text:"pessoas esperadas no evento"})))));
 
   // funil
   const conv=div(k.vendas,k.ic), compraVisita=div(k.vendas,k.lpv);
