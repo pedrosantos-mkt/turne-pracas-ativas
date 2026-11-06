@@ -239,7 +239,7 @@ table.raio-t{min-width:420px}
 .cenario-k span{font-size:12px;font-weight:600}
 .cenario-k b{font-family:var(--f-display);font-size:30px;font-weight:400;line-height:1.1}
 .cenario-k small{font-size:12px;color:var(--muted)}
-.simples{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:14px}
+.simples{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:14px}
 .simples>div{border:1px solid var(--line-soft);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;background:rgba(var(--shade-rgb),.12)}
 .simples>div.tot{border-color:var(--gold);background:var(--gold-soft)}
 .simples span{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -341,7 +341,7 @@ function calc(c){
   const diasCorr = Math.max(1, Math.round((Math.min(HOJE,new Date(c.evento+"T12:00:00")) - new Date(c.inicio+"T12:00:00"))/864e5)+1);
   return {
     spend:m.spend||0, imp:m.imp||0, clk:m.clk||0, lpv:m.lpv||0, ic:m.ic||0, pur:m.pur||0,
-    ing, vendas:g.vendas||0, rec:g.rec||0, cort:g.cort||0, qual, desq, semcp:g.semcp||0, cls,
+    ing, vendas:g.vendas||0, rec:g.rec||0, cort:g.cort||0, vip:g.vip||0, vipVendas:g.vip_vendas||0, qual, desq, semcp:g.semcp||0, cls,
     cpm: div(m.spend*1000,m.imp), ctr: div(m.clk,m.imp), connect: div(m.lpv,m.clk), chk: div(m.ic,m.lpv), conv: div(ing,m.lpv),
     cac: div(m.spend,ing), txq: div(qual,cls), qualEst: cls? (g.vendas||0)*qual/cls : null,
     cacq: cls&&qual ? m.spend/(ing*qual/cls) : null, ticket: div(g.rec,g.vendas), roas: div(g.rec,m.spend),
@@ -675,10 +675,13 @@ function renderDetail(c){
       el("p",{text:`Campanha desde ${dBR(c.inicio)} · ${k.diasCorr} dias rodando · `+(dr===0?"evento hoje":dr>0?`faltam ${dr} dias`:"evento realizado")})),
     el("span",{class:"tag",text:c.camps.filter(x=>x.status==="ACTIVE").length+" campanhas ativas"})));
 
-  // visão simples: ingressos vendidos + cortesias = total de pessoas com ingresso
-  d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Visão simples"}),el("small",{text:"vendas aprovadas na Guru · cortesia = oferta de cortesia ou valor R$ 0"})),
+  // visão simples: ingressos comuns + VIP (= vendidos) + cortesias = total de pessoas com ingresso
+  const comuns=k.ing-k.vip, vComuns=k.vendas-k.vipVendas;
+  d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Visão simples"}),el("small",{text:"vendas aprovadas na Guru · VIP = produto ou oferta com VIP no nome · cortesia = oferta de cortesia ou valor R$ 0"})),
     el("div",{class:"simples"},
-      el("div",{},el("span",{text:"Ingressos vendidos"}),el("b",{class:"num",text:int(k.ing)}),el("small",{text:`${int(k.vendas)} venda${k.vendas===1?"":"s"}`})),
+      el("div",{},el("span",{text:"Ingressos vendidos"}),el("b",{class:"num",text:int(comuns)}),el("small",{text:`sem VIP · ${int(vComuns)} venda${vComuns===1?"":"s"}`})),
+      el("i",{class:"op","aria-hidden":"true",text:"+"}),
+      el("div",{},el("span",{text:"Ingressos VIP"}),el("b",{class:"num",text:int(k.vip)}),el("small",{text:k.vip?`${int(k.vipVendas)} venda${k.vipVendas===1?"":"s"} · vendidos com VIP: ${int(k.ing)}`:"nenhum VIP vendido"})),
       el("i",{class:"op","aria-hidden":"true",text:"+"}),
       el("div",{},el("span",{text:"Cortesias"}),el("b",{class:"num",text:int(k.cort)}),el("small",{text:"sem custo"})),
       el("i",{class:"op","aria-hidden":"true",text:"="}),

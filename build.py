@@ -38,6 +38,7 @@ for code,pr in PR.items():
     qty=sum(i.get('qty',1) for i in x['items']); tot=x['payment']['total'] or 0
     if 'CORTESIA' in P or 'CORTESIA' in O or tot==0: s['cort']+=qty; continue
     s['ing']+=qty; s['vendas']+=1; s['rec']+=tot
+    if 'VIP' in P or 'VIP' in O: s['vip']+=qty; s['vip_vendas']+=1  # VIP entra nos vendidos; separado só para exibir
     d=dt.datetime.fromtimestamp(x['dates']['confirmed_at']).date().isoformat(); daily[d][1]+=qty; daily[d][4]+=tot; daily[d][5]+=1
     cg=hs.get((x['contact'].get('email') or '').lower().strip(),{}).get('ti__form____cargo') or 'Sem resposta'
     if re.search(r'CP[23]',O): cls_='qual'; daily[d][2]+=1
