@@ -86,6 +86,7 @@ em.g{font-family:var(--f-display);font-style:italic;color:var(--gold);font-weigh
 .city-k div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .city-k span{font-size:11px;color:var(--faint)}
 .city-k b{font-size:15px;font-weight:700}
+.city-k .city-sub{font-size:11px;color:var(--faint)}
 .bar{height:6px;border-radius:99px;background:var(--line-soft);overflow:hidden;display:flex}
 .bar i{display:block;height:100%}
 .legend-q{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
@@ -358,7 +359,7 @@ function renderGrid(list){
         dchip(c)),
       el("div",{class:"city-k"},
         el("div",{},el("span",{text:"Investimento"}),el("b",{class:"num",text:brl(k.spend)})),
-        el("div",{},el("span",{text:"Ingressos"}),el("b",{class:"num",text:int(k.ing)})),
+        el("div",{},el("span",{text:"Ingressos (total)"}),el("b",{class:"num",text:int(k.ing+k.cort)}),el("small",{class:"city-sub",text:`${int(k.ing)} vendidos + ${int(k.cort)} cortesia${k.cort===1?"":"s"}`})),
         el("div",{},el("span",{text:"CAC ingresso"}),el("b",{class:"num "+tone(k.cac,META.cac),text:brl(k.cac)})),
         el("div",{},el("span",{text:"CAC qualificado"}),el("b",{class:"num "+t,text:brl(k.cacq)}))),
       el("div",{style:"display:flex;flex-direction:column;gap:6px"},
