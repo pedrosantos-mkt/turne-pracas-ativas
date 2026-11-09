@@ -474,9 +474,11 @@ function chart(c){
 
 
 // ritmo: o que a praça está fazendo (média dos últimos 7 dias) × o que precisa fazer por dia até o evento
-const META_RITMO={ingressos:250, qual:125};   // meta de 250 ingressos por praça; qualificados 125 = 50% de 250
+// capacidade da praça = meta de ingressos (padrão 250); qualificados = 50% da meta
+const CAPACIDADE={PELOTAS:220, CANOAS:200, BALNEARIOCAMBORIU:300, FOZDOIGUACU:250, CHAPECO:250, MONTESCLAROS:200};
+const metaDe=c=>{const i=CAPACIDADE[c.code]??250; return {ingressos:i, qual:Math.round(i/2)};};
 function painelRitmo(c){
-  const k=c.k, wrap=el("div",{});
+  const k=c.k, wrap=el("div",{}), META_RITMO=metaDe(c);
   const diasAte=Math.round((new Date(c.evento+"T12:00:00")-HOJE)/864e5);
   wrap.append(el("div",{class:"sec-t"},el("h4",{text:"Ritmo até o evento"}),
     el("small",{text:diasAte<0?"evento realizado":`faltam ${diasAte} dia${diasAte===1?"":"s"} · ritmo atual = média dos últimos 7 dias, incluindo hoje`})));
@@ -525,17 +527,18 @@ function painelRitmo(c){
     el("div",{class:"cenario-t"},el("span",{class:"cap",text:"Cenário no ritmo atual"}),
       el("small",{text:`se mantiver a média dos últimos 7 dias até ${dBR(c.evento)} · ${ingPorVenda.toLocaleString("pt-BR",{maximumFractionDigits:2})} ingresso por venda`})),
     el("div",{class:"cenario-k"},
-      ...[["Ingressos",int(ingFim),`meta 250 · ${pct(ingFim/META_RITMO.ingressos,0)} · hoje ${int(k.ing)}`,tone(ingFim,META_RITMO.ingressos,false)],
+      ...[["Ingressos",int(ingFim),`meta ${META_RITMO.ingressos} · ${pct(ingFim/META_RITMO.ingressos,0)} · hoje ${int(k.ing)}`,tone(ingFim,META_RITMO.ingressos,false)],
           ["Vendas",int(vendasFim),`hoje ${int(k.vendas)} · +${int(vendasFim-k.vendas)} até o evento`,""],
-          ["Qualificados",int(qualFim),`meta 125 · ${pct(qualFim/META_RITMO.qual,0)}`,tone(qualFim,META_RITMO.qual,false)],
+          ["Qualificados",int(qualFim),`meta ${META_RITMO.qual} · ${pct(qualFim/META_RITMO.qual,0)}`,tone(qualFim,META_RITMO.qual,false)],
           ["Investimento total",brl(gastoFim),`${brl(div(gastoFim,ingFim))} por ingresso · CAC qualif. ${brl(div(gastoFim,qualFim))}`,""]]
         .map(([l,v,s,tn])=>el("div",{},el("span",{text:l}),el("b",{class:"num "+tn,text:v}),el("small",{text:s})))));
   wrap.append(cen);
   wrap.append(ritmoGrafico(c,rest,ritmoI));
   return wrap;
 }
-// vendas acumuladas, o caminho até 250 e a projeção no ritmo atual
+// vendas acumuladas, o caminho até a meta e a projeção no ritmo atual
 function ritmoGrafico(c,rest,ritmoV){
+  const META_RITMO=metaDe(c);
   const box=el("div",{class:"chart",style:"margin-top:14px"});
   const rows=c.daily; if(!rows.length) return box;
   // começa do que já tinha sido vendido antes do primeiro dia de campanha, para fechar no total da praça
@@ -548,7 +551,7 @@ function ritmoGrafico(c,rest,ritmoV){
   s.setAttribute("viewBox",`0 0 ${W} ${H}`); s.setAttribute("role","img"); s.setAttribute("aria-label","Ingressos acumulados, caminho até a meta e projeção");
   const add=(tg,a,txt)=>{const e=document.createElementNS(NS,tg);for(const[k2,v]of Object.entries(a))e.setAttribute(k2,v);if(txt!=null)e.textContent=txt;s.append(e);return e;};
   [0,.5,1].forEach(f=>{const v=Math.round(maxY*f/10)*10, y=dy(v); add("line",{x1:P.l,x2:W-P.r,y1:y,y2:y,style:"stroke:rgba(var(--ink-rgb),.08)"}); add("text",{x:P.l-8,y:y+4,"text-anchor":"end","font-size":10,style:"fill:var(--faint)"},int(v));});
-  const ym=dy(META_RITMO.ingressos); add("line",{x1:P.l,x2:W-P.r,y1:ym,y2:ym,style:"stroke:var(--gold)","stroke-dasharray":"2 4"}); add("text",{x:W-P.r+6,y:ym+4,"font-size":11,"font-weight":700,style:"fill:var(--gold)"},"meta 250");
+  const ym=dy(META_RITMO.ingressos); add("line",{x1:P.l,x2:W-P.r,y1:ym,y2:ym,style:"stroke:var(--gold)","stroke-dasharray":"2 4"}); add("text",{x:W-P.r+6,y:ym+4,"font-size":11,"font-weight":700,style:"fill:var(--gold)"},"meta "+META_RITMO.ingressos);
   add("path",{d:"M"+pts.map(([d,v])=>`${dx(new Date(d+"T12:00:00"))},${dy(v)}`).join("L"),fill:"none",style:"stroke:var(--fg)","stroke-width":2});
   const hx=dx(HOJE), hy=dy(acc), ex=dx(fim);
   add("path",{d:`M${hx},${hy}L${ex},${ym}`,fill:"none",style:"stroke:var(--gold)","stroke-width":1.5,"stroke-dasharray":"6 4"});
@@ -685,7 +688,7 @@ function renderDetail(c){
       el("i",{class:"op","aria-hidden":"true",text:"+"}),
       el("div",{},el("span",{text:"Cortesias"}),el("b",{class:"num",text:int(k.cort)}),el("small",{text:"sem custo"})),
       el("i",{class:"op","aria-hidden":"true",text:"="}),
-      el("div",{class:"tot"},el("span",{text:"Total com ingresso"}),el("b",{class:"num",text:int(k.ing+k.cort)}),el("small",{text:"pessoas esperadas no evento"})))));
+      el("div",{class:"tot"},el("span",{text:"Total com ingresso"}),el("b",{class:"num",text:int(k.ing+k.cort)}),el("small",{text:`capacidade ${metaDe(c).ingressos} · ${pct((k.ing+k.cort)/metaDe(c).ingressos,0)} ocupado`})))));
 
   // funil
   const conv=div(k.vendas,k.ic), compraVisita=div(k.vendas,k.lpv);
@@ -698,7 +701,7 @@ function renderDetail(c){
     rate(pct(k.chk,1),"Visita → checkout","meta 12%",tone(k.chk,META_F.chk,false)),
     stage("Checkouts",int(k.ic),"pixel"),
     rate(pct(conv,0),"Conversão","meta 40%",tone(conv,META_F.conv,false)),
-    stage("Ingressos",int(k.ing),int(k.vendas)+" vendas · compra/visita "+pct(compraVisita,1),true,"meta 250 ingressos · compra/visita 2,4%",tone(k.ing,META_F.ingressos,false)),
+    stage("Ingressos",int(k.ing),int(k.vendas)+" vendas · compra/visita "+pct(compraVisita,1),true,`meta ${metaDe(c).ingressos} ingressos · compra/visita 2,4%`,tone(k.ing,metaDe(c).ingressos,false)),
     rate(pct(k.txq,0),"Qualificação","meta 50%",tone(k.txq,META.qual,false)),
     stage("Qualificados",int(k.qualEst),"estimado",true));
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Funil da praça"}),el("small",{text:"Meta Ads até checkout; vendas, ingressos e qualificação pela Guru · conversão = vendas ÷ checkouts"})),f));
