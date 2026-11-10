@@ -15,7 +15,7 @@ CRE=re.compile(r'\[(IMG|VD|VID|CAR)\]')
 for cid,rows in adsets.items():
   for r in rows:
     id2set[r['adset_id']]=(r['adset_name'],ins[cid]['name'])
-CITYK={c:[c]+p['aliases'] for c,p in json.load(open('raw/pracas.json')).items()}
+CITYK={c:[p['cidade']]+p['aliases'] for c,p in json.load(open('raw/pracas.json')).items()}
 by=collections.defaultdict(list)
 for s in subs:
   if s.get('email'): by[s['email'].lower().strip()].append(s)

@@ -1,8 +1,12 @@
 import requests, json, os, re, time
-from pracas import pracas, META_TOKEN
+from pracas import pracas, todas_pracas, META_TOKEN
+import glob
 T=META_TOKEN()
 d=json.load(open('raw/allmv.json'))
-P=pracas(d)
+EM_CACHE={os.path.basename(f)[:-5] for f in glob.glob('cache/pracas/*.json')}
+json.dump(todas_pracas(d),open('raw/pracas_todas.json','w'),ensure_ascii=False)
+P=pracas(d,em_cache=EM_CACHE)
+print(len(P),'praças a coletar,',len(EM_CACHE),'no cache')
 json.dump(P,open('raw/pracas.json','w'),ensure_ascii=False)
 nm={c['id']:c for c in d}
 sel={cid:(code,nm[cid]) for code,p in P.items() for cid in p['campanhas']}

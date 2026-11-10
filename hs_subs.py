@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pracas import HUBSPOT_TOKEN
 T=HUBSPOT_TOKEN()
 import datetime as dt
-desde=(dt.date.today()-dt.timedelta(days=150)).isoformat()
+desde='2025-09-01'   # formulários das praças do ano
 forms=[];after=None
 while True:
   p={'limit':100}

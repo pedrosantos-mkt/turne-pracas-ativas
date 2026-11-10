@@ -2,7 +2,7 @@ import requests, json, os
 from pracas import META_TOKEN
 T=META_TOKEN()
 import datetime as dt
-LIMITE=(dt.date.today()-dt.timedelta(days=150)).isoformat()
+LIMITE='2025-09-01'   # campanhas das praças do ano (eventos desde 01/01/2026)
 out=[];url='https://graph.facebook.com/v21.0/act_171474008015977/campaigns'
 p={'access_token':T,'fields':'id,name,effective_status,start_time,stop_time','limit':500}
 while url:

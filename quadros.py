@@ -36,7 +36,7 @@ for c in d['cidades']:
   for x in g:
     if x['status']!='approved' or not (x['payment']['total'] or 0): continue
     P=NZ(x['product']['name'])
-    if not guru_da_praca(x['product']['name'],pr) or 'CORTESIA' in P: continue
+    if not guru_da_praca(x,pr) or 'CORTESIA' in P: continue
     O=NZ((x['product'].get('offer') or {}).get('name',''))+'|'+NZ(x['items'][0]['name'])+'|'+NZ(x['checkout_url'].split('/pay/')[-1])
     qty=sum(i.get('qty',1) for i in x['items'])
     cls_='qual' if re.search(r'CP[23]',O) else 'desq' if 'CP1' in O else 'semcp'

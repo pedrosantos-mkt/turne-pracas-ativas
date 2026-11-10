@@ -5,7 +5,7 @@ from pracas import guru_da_praca
 PR=json.load(open('raw/pracas.json')).values()
 from pracas import HUBSPOT_TOKEN
 T=HUBSPOT_TOKEN()
-emails=sorted({(x['contact'].get('email') or '').lower().strip() for x in g if x['status']=='approved' and (x['payment']['total'] or 0)>0 and any(guru_da_praca(x['product']['name'],p) for p in PR)}-{''})
+emails=sorted({(x['contact'].get('email') or '').lower().strip() for x in g if x['status']=='approved' and (x['payment']['total'] or 0)>0 and any(guru_da_praca(x,p) for p in PR)}-{''})
 print(len(emails))
 P=['email','annualrevenue','qual_o_seu_cargo_','ti__cargo','ti__form____cargo','jobtitle']
 res={}

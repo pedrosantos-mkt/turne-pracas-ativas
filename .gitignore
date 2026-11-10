@@ -5,3 +5,4 @@ site/index.html
 site/.vercel
 __pycache__/
 .DS_Store
+cache/

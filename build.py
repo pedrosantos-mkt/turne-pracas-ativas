@@ -33,7 +33,7 @@ for code,pr in PR.items():
   for x in g:
     if x['status']!='approved': continue
     P=N(x['product']['name'])
-    if not guru_da_praca(x['product']['name'],pr): continue
+    if not guru_da_praca(x,pr): continue
     O=N((x['product'].get('offer') or {}).get('name',''))+'|'+N(x['items'][0]['name'])+'|'+N(x['checkout_url'].split('/pay/')[-1])
     qty=sum(i.get('qty',1) for i in x['items']); tot=x['payment']['total'] or 0
     if 'CORTESIA' in P or 'CORTESIA' in O or tot==0: s['cort']+=qty; continue

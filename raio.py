@@ -49,9 +49,9 @@ for c in d['cidades']:
       e['conjuntos']+=1; e['ativos']+=info.get('effective_status')=='ACTIVE'; e['gasto']+=gasto_do_conjunto.get(aid,0)
   cs=sorted(centros.values(),key=lambda e:-e['gasto'])
   pr=PR[c['code']]
-  mev=por_nome.get((NZ(c['nome']),c['uf'])) or next((m for m in MUN if NZ(m['nome'])==c['code']),None)
+  mev=por_nome.get((NZ(c['nome']),c['uf'])) or next((m for m in MUN if NZ(m['nome'])==PR[c['code']]['cidade']),None)
   if mev: ev={'nome':mev['nome'],'uf':mev['uf'],'lat':mev['lat'],'lon':mev['lon']}
-  elif c['code']=='PARAGUAI': ev={'nome':'Ciudad del Este','uf':'PY','lat':EXTERIOR['CIUDADDELESTE'][0],'lon':EXTERIOR['CIUDADDELESTE'][1]}
+  elif PR[c['code']]['cidade']=='PARAGUAI': ev={'nome':'Ciudad del Este','uf':'PY','lat':EXTERIOR['CIUDADDELESTE'][0],'lon':EXTERIOR['CIUDADDELESTE'][1]}
   else: ev={'nome':cs[0]['nome'],'uf':cs[0]['uf'],'lat':cs[0]['lat'],'lon':cs[0]['lon']} if cs else None
   # municípios dentro de algum raio
   dentro={}
@@ -64,7 +64,7 @@ for c in d['cidades']:
   # cidade informada pelo comprador na Guru (vendas pagas da praça)
   comp=collections.Counter()
   for x in g:
-    if x['status']!='approved' or not (x['payment']['total'] or 0) or not guru_da_praca(x['product']['name'],PR[c['code']]): continue
+    if x['status']!='approved' or not (x['payment']['total'] or 0) or not guru_da_praca(x,PR[c['code']]): continue
     if 'CORTESIA' in NZ(x['product']['name']): continue
     ct=x.get('contact') or {}; comp[(NZ(ct.get('address_city')),(ct.get('address_state') or '').upper()[:2])]+=1
   muns=[]
