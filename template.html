@@ -251,10 +251,14 @@ table.raio-t{min-width:420px}
 .simples small{font-size:12px;color:var(--faint)}
 .simples .op{font-style:normal;font-size:26px;color:var(--faint);text-align:center}
 @media (max-width:640px){.simples{grid-template-columns:1fr}.simples .op{display:none}}
-.compar-nota{margin:10px 0 0;font-size:12px;color:var(--muted)}
-.compar{margin-top:36px}
-.compar tr.tot td{border-top:1px solid var(--gold);font-weight:700}
-.compar td small{color:var(--faint);font-size:12px}
+.cmp-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.cmp-g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cmp{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.cmp span{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.cmp b{font-size:30px;line-height:1.1}
+.cmp small{color:var(--muted);font-size:12px}
+.cmp .capac-bar{margin-top:4px}
+.cmp.tot{border-color:var(--gold)}
 .capac{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center;margin-top:14px;border:1px solid var(--line-soft);border-radius:12px;padding:16px 18px;background:rgba(var(--shade-rgb),.12)}
 .capac-l{display:flex;flex-direction:column;gap:4px;min-width:170px}
 .capac-l span{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -327,7 +331,6 @@ footer{margin-top:28px;font-size:12px;color:var(--faint);line-height:1.6;max-wid
   </div>
   <button class="menu-btn" id="menu-btn" type="button" aria-controls="menu" aria-expanded="false">Cidades e quadros</button>
 
-  <section class="compar" id="compar" hidden></section>
   <footer>
     Investimento, impressões, cliques, visitas e checkouts vêm do Meta Ads (conta Máquina de Vendas), somando todas as campanhas de compra da praça desde a primeira.
     Ingressos, receita e cortesias vêm da Guru (vendas aprovadas). O pixel registra só parte das vendas, por isso o ingresso nunca é o do pixel.
@@ -899,6 +902,33 @@ function renderDetail(c){
     el("td",{class:"num",text:int(ingCamp)}),el("td",{class:"num",text:brl(div(k.spend,ingCamp))}),el("td",{class:"num",text:"100%"})));
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Campanhas da praça"}),el("small",{text:"ordenadas por investimento · ingressos pagos da Guru, ligados à campanha pela UTM do formulário que o comprador preencheu antes da compra"})),
     el("div",{class:"tw"},el("table",{},el("thead",{},el("tr",{},...["Campanha","Investimento","Visitas LP","Ingressos (Guru)","CPA","% da verba"].map(h=>el("th",{text:h})))),tb))));
+  const pc=painelComparecimento(c); if(pc) d.append(pc);
+}
+
+// comparecimento da praça: check-in dos e-tickets da Guru, a partir do dia seguinte ao evento
+function painelComparecimento(c){
+  if(c.k.dRest>=0) return null;
+  const ck=c.checkin, cab=el("div",{class:"sec-t"},el("h4",{text:"Comparecimento"}),
+    el("small",{text:"check-in dos e-tickets da Guru"+(ck&&ck.data?" · evento em "+dBR(ck.data):"")+" · e-tickets cancelados ficam fora"}));
+  const aviso=t=>el("div",{},cab,el("p",{class:"note",text:t}));
+  if(!ck) return aviso("Nenhum e-ticket desta praça encontrado na Guru (ou o check-in ainda não foi carregado).");
+  const emit=ck.pago.emitidos+ck.cortesia.emitidos, pres=ck.pago.presentes+ck.cortesia.presentes;
+  if((ck.cancelados||0)>emit) return aviso(`Evento cancelado: ${int(ck.cancelados)} e-tickets cancelados na Guru.`);
+  if(emit<20||pres/emit<0.1) return aviso(`Sem leitura de check-in na portaria: ${int(pres)} presentes marcados de ${int(emit)} e-tickets.`);
+  const tx=x=>x.emitidos?x.presentes/x.emitidos:null;
+  const caixa=(nome,x,cls)=>el("div",{class:"cmp "+(cls||"")},
+    el("span",{text:nome}),el("b",{class:"num",text:pct(tx(x),0)}),
+    el("small",{text:`${int(x.presentes)} presentes de ${int(x.emitidos)} e-tickets`}),
+    el("div",{class:"capac-bar"},el("i",{style:`width:${((tx(x)||0)*100).toFixed(1)}%`})));
+  const tp=tx(ck.pago), tc=tx(ck.cortesia), dif=tp!=null&&tc!=null?(tp-tc)*100:null;
+  const cap=metaDe(c).ingressos;
+  return el("div",{},cab,el("div",{class:"cmp-g"},
+    caixa("Ingresso pago",ck.pago),
+    caixa("Cortesia",ck.cortesia),
+    el("div",{class:"cmp"},el("span",{text:"Diferença"}),el("b",{class:"num",text:dif==null?"—":(dif>0?"+":"")+dif.toLocaleString("pt-BR",{maximumFractionDigits:0})+" p.p."}),
+      el("small",{text:dif==null?"sem base de comparação":dif>=0?"pago compareceu mais que cortesia":"cortesia compareceu mais que pago"})),
+    el("div",{class:"cmp tot"},el("span",{text:"Pessoas no evento"}),el("b",{class:"num",text:int(pres)}),
+      el("small",{text:`${pct(pres/emit,0)} dos ${int(emit)} e-tickets · ${pct(pres/cap,0)} da capacidade (${int(cap)})`}))));
 }
 
 
@@ -969,33 +999,8 @@ function render(){
   document.getElementById("layout").hidden=!aberta; document.getElementById("menu-btn").hidden=!aberta;
   renderGrid(list); if(!list.length) document.getElementById("grid").replaceChildren(el("p",{class:"note",text:"Nenhuma praça neste ciclo."}));
   if(aberta) renderCidade();
-  renderComparecimento(list);
 }
 
-// comparecimento: check-in dos e-tickets da Guru, a partir do dia seguinte ao evento; pago × cortesia
-function renderComparecimento(list){
-  const box=document.getElementById("compar"), todas=list.filter(c=>c.checkin).sort((a,b)=>b.evento.localeCompare(a.evento));
-  // sem leitura de check-in: poucos e-tickets ou quase ninguém marcado como presente (portaria não escaneou)
-  const lido=c=>{const e=c.checkin.pago.emitidos+c.checkin.cortesia.emitidos, p=c.checkin.pago.presentes+c.checkin.cortesia.presentes; return e>=20&&p/e>=0.1;};
-  const rows=todas.filter(lido), fora=todas.filter(c=>!lido(c));
-  const emit=c=>c.checkin.pago.emitidos+c.checkin.cortesia.emitidos;
-  const canc=fora.filter(c=>(c.checkin.cancelados||0)>emit(c)), semLeit=fora.filter(c=>!canc.includes(c));
-  const nomeData=c=>c.nome+" "+dBR(c.checkin.data||c.evento);
-  box.hidden=!rows.length; if(!rows.length) return box.replaceChildren();
-  const tx=x=>x&&x.emitidos?x.presentes/x.emitidos:null;
-  const soma=k=>rows.reduce((a,c)=>({emitidos:a.emitidos+c.checkin[k].emitidos,presentes:a.presentes+c.checkin[k].presentes}),{emitidos:0,presentes:0});
-  const cel=x=>[el("td",{class:"num",text:int(x.presentes)+" de "+int(x.emitidos)}),el("td",{class:"num",text:pct(tx(x),0)})];
-  const linha=(nome,sub,p,co,cls)=>el("tr",{class:cls||""},el("td",{},el("b",{text:nome}),sub?el("small",{text:" "+sub}):null),...cel(p),...cel(co),
-    el("td",{class:"num",text:tx(p)!=null&&tx(co)!=null?((tx(p)-tx(co))*100).toLocaleString("pt-BR",{maximumFractionDigits:0})+" p.p.":"—"}));
-  box.replaceChildren(el("div",{class:"sec-t"},el("h4",{text:"Comparecimento: ingresso pago × cortesia"}),
-      el("small",{text:"check-in dos e-tickets da Guru · aparece a partir do dia seguinte ao evento · e-tickets cancelados ficam fora"})),
-    el("div",{class:"tw"},el("table",{class:"grid-t"},
-      el("thead",{},el("tr",{},...["Cidade","Pagos presentes","Comparecimento pago","Cortesias presentes","Comparecimento cortesia","Diferença"].map(h=>el("th",{text:h})))),
-      el("tbody",{},...rows.map(c=>linha(c.nome,comEd(`${dBR(c.checkin.data||c.evento)} · ciclo ${cicloDe(c)}`,c),c.checkin.pago,c.checkin.cortesia)),
-        linha("Total",`${rows.length} praça${rows.length===1?"":"s"}`,soma("pago"),soma("cortesia"),"tot")))),
-    canc.length?el("p",{class:"compar-nota",text:"Evento cancelado (todos os e-tickets cancelados): "+canc.map(nomeData).join(", ")+"."}):null,
-    semLeit.length?el("p",{class:"compar-nota",text:"Sem leitura de check-in na portaria (fora da tabela): "+semLeit.map(nomeData).join(", ")+"."}):null);
-}
 
 // próxima atualização automática (6h, 9h, 12h, 15h, 18h e 21h de Brasília, no minuto 7)
 function proximaAtualizacao(){
