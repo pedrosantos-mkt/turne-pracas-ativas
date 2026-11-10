@@ -506,7 +506,12 @@ function chart(c){
 // capacidade da praça = meta de ingressos (padrão 250); qualificados = 50% da meta
 const CAPACIDADE={"PELOTAS-1011":220, "CANOAS-1111":200, "BALNEARIOCAMBORIU-1211":300, "FOZDOIGUACU-1311":250, "CHAPECO-2311":250, "MONTESCLAROS-3011":200};
 const metaDe=c=>{const i=CAPACIDADE[c.code]??250; return {ingressos:i, qual:Math.round(i/2)};};
-const temCapacidade=c=>c.code in CAPACIDADE || c.k.dRest>=0;
+const temCapacidade=c=>true;   // capacidade informada pelo usuário ou 250 por padrão
+// edição da cidade no ano (só quando a turnê passou mais de uma vez por ela)
+const EDICAO={}; (()=>{const g={}; DATA.cidades.forEach(c=>(g[c.code.split("-")[0]]??=[]).push(c));
+  Object.values(g).forEach(l=>{ if(l.length>1) l.sort((a,b)=>a.evento.localeCompare(b.evento)).forEach((c,i)=>EDICAO[c.code]=i+1); });})();
+const edTxt=c=>EDICAO[c.code]?EDICAO[c.code]+"ª edição":"";
+const comEd=(t,c)=>edTxt(c)?t+" · "+edTxt(c):t;
 function painelRitmo(c){
   const k=c.k, wrap=el("div",{}), META_RITMO=metaDe(c);
   const diasAte=Math.round((new Date(c.evento+"T12:00:00")-HOJE)/864e5);
@@ -704,7 +709,7 @@ function renderDetail(c){
   const dr=k.dRest;
   d.append(el("div",{class:"d-head"},
     el("div",{},el("span",{class:"cap",text:`Ciclo ${cicloDe(c)} · ${c.uf}`}),
-      el("h2",{},document.createTextNode(c.nome+" "),el("em",{class:"g",text:"em "+dBR(c.evento)})),
+      el("h2",{},document.createTextNode(c.nome+" "),el("em",{class:"g",text:"em "+dBR(c.evento)+(edTxt(c)?" · "+edTxt(c):"")})),
       el("p",{text:`Campanha desde ${dBR(c.inicio)} · ${k.diasCorr} dias rodando · `+(dr===0?"evento hoje":dr>0?`faltam ${dr} dias`:"evento realizado")})),
     el("span",{class:"tag",text:c.camps.filter(x=>x.status==="ACTIVE").length+" campanhas ativas"})));
 
@@ -913,7 +918,7 @@ function renderMenu(quadros){
   const c=DATA.cidades.find(x=>x.code===sel); if(!c) return;
   const d=c.k.dRest;
   // menu só da cidade aberta: o nome dela, os quadros e o atalho de volta para os cartões
-  m.append(el("div",{class:"m-cidade"},el("span",{class:"m-nome"},el("b",{text:c.nome}),el("small",{text:`${c.uf} · evento ${dBR(c.evento)} · ${int(c.k.ing+c.k.cort)} ingressos`})),
+  m.append(el("div",{class:"m-cidade"},el("span",{class:"m-nome"},el("b",{text:c.nome}),el("small",{text:comEd(`${c.uf} · evento ${dBR(c.evento)}`,c)+` · ${int(c.k.ing+c.k.cort)} ingressos`})),
     el("span",{class:"m-d"+(d===0?" hoje":""),text:d===0?"HOJE":d<0?"FIM":"D-"+d})));
   const sub=el("ul",{class:"m-q"});
   quadros.forEach(q=>{ const a=el("a",{href:"#"+q.id,"data-q":q.id,text:q.nome});
@@ -938,7 +943,7 @@ function renderGrid(list){
     const k=c.k, t=tone(k.cacq,META.cacq);
     const b=el("button",{class:"city",type:"button","aria-current":String(sel===c.code)},
       el("div",{class:"city-h"},
-        el("div",{},el("h3",{text:c.nome}),el("p",{text:`${c.uf} · evento ${dBR(c.evento)} · Ciclo ${cicloDe(c)}`})),
+        el("div",{},el("h3",{text:c.nome}),el("p",{text:comEd(`${c.uf} · evento ${dBR(c.evento)} · Ciclo ${cicloDe(c)}`,c)})),
         dchip(c)),
       el("div",{class:"city-k"},
         el("div",{},el("span",{text:"Investimento"}),el("b",{class:"num",text:brl(k.spend)})),
@@ -973,6 +978,9 @@ function renderComparecimento(list){
   // sem leitura de check-in: poucos e-tickets ou quase ninguém marcado como presente (portaria não escaneou)
   const lido=c=>{const e=c.checkin.pago.emitidos+c.checkin.cortesia.emitidos, p=c.checkin.pago.presentes+c.checkin.cortesia.presentes; return e>=20&&p/e>=0.1;};
   const rows=todas.filter(lido), fora=todas.filter(c=>!lido(c));
+  const emit=c=>c.checkin.pago.emitidos+c.checkin.cortesia.emitidos;
+  const canc=fora.filter(c=>(c.checkin.cancelados||0)>emit(c)), semLeit=fora.filter(c=>!canc.includes(c));
+  const nomeData=c=>c.nome+" "+dBR(c.checkin.data||c.evento);
   box.hidden=!rows.length; if(!rows.length) return box.replaceChildren();
   const tx=x=>x&&x.emitidos?x.presentes/x.emitidos:null;
   const soma=k=>rows.reduce((a,c)=>({emitidos:a.emitidos+c.checkin[k].emitidos,presentes:a.presentes+c.checkin[k].presentes}),{emitidos:0,presentes:0});
@@ -983,9 +991,10 @@ function renderComparecimento(list){
       el("small",{text:"check-in dos e-tickets da Guru · aparece a partir do dia seguinte ao evento · e-tickets cancelados ficam fora"})),
     el("div",{class:"tw"},el("table",{class:"grid-t"},
       el("thead",{},el("tr",{},...["Cidade","Pagos presentes","Comparecimento pago","Cortesias presentes","Comparecimento cortesia","Diferença"].map(h=>el("th",{text:h})))),
-      el("tbody",{},...rows.map(c=>linha(c.nome,`${dBR(c.evento)} · ciclo ${cicloDe(c)}`,c.checkin.pago,c.checkin.cortesia)),
+      el("tbody",{},...rows.map(c=>linha(c.nome,comEd(`${dBR(c.checkin.data||c.evento)} · ciclo ${cicloDe(c)}`,c),c.checkin.pago,c.checkin.cortesia)),
         linha("Total",`${rows.length} praça${rows.length===1?"":"s"}`,soma("pago"),soma("cortesia"),"tot")))),
-    fora.length?el("p",{class:"compar-nota",text:"Sem leitura de check-in (fora da tabela): "+fora.map(c=>c.nome+" "+dBR(c.evento)).join(", ")+"."}):null);
+    canc.length?el("p",{class:"compar-nota",text:"Evento cancelado (todos os e-tickets cancelados): "+canc.map(nomeData).join(", ")+"."}):null,
+    semLeit.length?el("p",{class:"compar-nota",text:"Sem leitura de check-in na portaria (fora da tabela): "+semLeit.map(nomeData).join(", ")+"."}):null);
 }
 
 // próxima atualização automática (6h, 9h, 12h, 15h, 18h e 21h de Brasília, no minuto 7)
