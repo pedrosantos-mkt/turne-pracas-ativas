@@ -8,7 +8,7 @@ URL = 'https://digitalmanager.guru/api/v2/etickets'
 d = json.load(open('data.json')); TODAS = json.load(open('raw/pracas_todas.json'))
 hoje = dt.date.today()
 JAN = 3   # data da campanha pode diferir 1 dia da data real do evento (Imperatriz, Pouso Alegre, Criciúma, Juiz de Fora)
-VERSAO = 2
+VERSAO = 3   # v3: e-ticket de venda R$ 0 dentro do produto pago conta como cortesia (pelo e-mail)
 alvo = [c for c in d['cidades'] if c.get('checkin_v') != VERSAO and dt.date.fromisoformat(c['evento']) <= hoje - dt.timedelta(days=1)]   # aparece no dia seguinte; refaz até a janela fechar
 
 def pagina(cur):
@@ -34,6 +34,18 @@ def janela(ev):
     if ult < ini: return out
     cur = j.get('next_cursor')
 
+# e-mails de cada praça com venda paga e com cortesia (oferta CORTESIA ou valor R$ 0, como no build.py):
+# a Guru emite o e-ticket da cortesia R$ 0 com o nome do produto pago, então o nome sozinho não separa
+from pracas import praca_da_venda
+EM = {}
+for x in json.load(open('raw/guru.json')):
+  if x['status'] != 'approved': continue
+  cod = praca_da_venda(x); em = ((x.get('contact') or {}).get('email') or '').lower().strip()
+  if not cod or not em: continue
+  P = NZ(x['product']['name']); O = NZ((x['product'].get('offer') or {}).get('name', '')) + '|' + NZ(x['items'][0]['name']) + '|' + NZ((x.get('checkout_url') or '').split('/pay/')[-1])
+  cort = 'CORTESIA' in P or 'CORTESIA' in O or not (x['payment']['total'] or 0)
+  EM.setdefault(cod, {'pago': set(), 'cortesia': set()})['cortesia' if cort else 'pago'].add(em)
+
 cache_jan = {}
 for c in alvo:
   ev = dt.date.fromisoformat(c['evento'])
@@ -55,7 +67,8 @@ for c in alvo:
   for dia, e, P in minhas:
     if dia != real: continue
     if e.get('status') == 'canceled': r['cancelados'] += 1; continue
-    t = 'cortesia' if 'CORTESIA' in P else 'pago'
+    em = (e.get('email') or '').lower().strip(); ems = EM.get(c['code'], {'pago': set(), 'cortesia': set()})
+    t = 'cortesia' if 'CORTESIA' in P or (em in ems['cortesia'] and em not in ems['pago']) else 'pago'
     r[t]['emitidos'] += 1; r[t]['presentes'] += e.get('status') == 'checked_in'
   c['checkin'] = r if real else None
   if ev <= hoje - dt.timedelta(days=JAN + 1): c['checkin_v'] = VERSAO
