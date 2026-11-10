@@ -251,6 +251,19 @@ table.raio-t{min-width:420px}
 .simples small{font-size:12px;color:var(--faint)}
 .simples .op{font-style:normal;font-size:26px;color:var(--faint);text-align:center}
 @media (max-width:640px){.simples{grid-template-columns:1fr}.simples .op{display:none}}
+.vc{display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.vc-l{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,3fr) 70px;gap:14px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft)}
+.vc-l:last-child{border-bottom:0}
+.vc-l.tot{border-top:1px solid var(--gold);padding-top:12px}
+.vc-n{display:flex;flex-direction:column;gap:2px;min-width:0}
+.vc-n b{font-size:13px;overflow-wrap:anywhere}
+.vc-n small{color:var(--muted);font-size:12px}
+.vc-bar{position:relative;height:12px;border-radius:99px;background:rgba(var(--ink-rgb),.08)}
+.vc-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--gold)}
+.vc-bar i.ok{background:var(--ok)} .vc-bar i.warn{background:var(--warn)} .vc-bar i.bad{background:var(--bad)}
+.vc-bar u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--fg);opacity:.6}
+.vc-t{text-align:right;font-size:18px}
+@media (max-width:640px){.vc-l{grid-template-columns:minmax(0,1fr) 60px}.vc-bar{grid-column:1/-1;grid-row:2}}
 .cmp-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 @media (max-width:820px){.cmp-g{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .cmp{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -823,18 +836,32 @@ function renderDetail(c){
       pb, el("tfoot",{},pubRow("Total",sumRows(c.publicos),true,c.bm)))),
     el("p",{class:"note",style:"margin-top:10px",text:"Quente: envolvimento, seguidores e site. Frio: semelhantes, interesses e Advantage+. Mix validados mistura públicos. Sem UTM: vendas cujo formulário chegou sem o nome do público, sem investimento associado."})));
 
+const vchk=r=>r.lpv?(r.ic||0)/r.lpv:null;
   const pt=sumRows(c.paginas), px=rowCalc(pt);
   const pgb=el("tbody");
   c.paginas.forEach(r=>{const x=rowCalc(r);pgb.append(el("tr",{},el("td",{class:"pg",text:r.nome}),
-    cell(int(x.ing)),cell(int(x.q)),cell(pct(x.tx,0)),cell(pct(x.conv,1)),cell(pct(x.connect,0),"sep"),cell(money(x.sp)),cell(brl(x.cpa)),cell(brl(x.cacq))));});
+    cell(int(x.ing)),cell(int(x.q)),cell(pct(x.tx,0)),cell(pct(x.conv,1)),cell(pct(vchk(r),1),tone(vchk(r),META_F.chk,false)),cell(pct(x.connect,0),"sep"),cell(money(x.sp)),cell(brl(x.cpa)),cell(brl(x.cacq))));});
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Páginas que rodaram"}),el("small",{text:"investimento pela URL do anúncio · ingressos pela página do formulário"})),
     el("div",{class:"kpis",style:"grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px"},
       kpi("Visitas na página",int(px.lpv),"landing page views no Meta"),
       kpi("Conversão da página",pct(px.conv,1),"ingressos ÷ visitas"),
       kpi("Connect rate",pct(px.connect,0),"visitas ÷ cliques no link")),
     el("div",{class:"tw"},el("table",{class:"grid-t"},
-      el("thead",{},el("tr",{},...["Página","Ingressos","CP2/CP3","% qualif.","Conversão","Connect","Investimento","CPA","CAC qualif."].map((h,i)=>el("th",{class:i===5?"sep":"",text:h})))),
-      pgb, el("tfoot",{},el("tr",{class:"tot"},el("td",{text:"Total"}),cell(int(px.ing)),cell(int(px.q)),cell(pct(px.tx,0)),cell(pct(px.conv,1)),cell(pct(px.connect,0),"sep"),cell(brl(px.sp)),cell(brl(px.cpa)),cell(brl(px.cacq))))))));
+      el("thead",{},el("tr",{},...["Página","Ingressos","CP2/CP3","% qualif.","Conversão","Visita → checkout","Connect","Investimento","CPA","CAC qualif."].map((h,i)=>el("th",{class:i===6?"sep":"",text:h})))),
+      pgb, el("tfoot",{},el("tr",{class:"tot"},el("td",{text:"Total"}),cell(int(px.ing)),cell(int(px.q)),cell(pct(px.tx,0)),cell(pct(px.conv,1)),cell(pct(vchk(pt),1)),cell(pct(px.connect,0),"sep"),cell(brl(px.sp)),cell(brl(px.cpa)),cell(brl(px.cacq))))))));
+
+  // visita → checkout por página (Meta: landing page views e initiate checkout da URL do anúncio)
+  const vp=c.paginas.filter(r=>r.lpv>0).sort((a,b)=>b.lpv-a.lpv);
+  if(vp.length){
+    const esc=Math.max(META_F.chk*1.5,...vp.map(vchk));
+    const linhaVC=(nome,r,cls)=>{const t=vchk(r), tn=tone(t,META_F.chk,false);
+      return el("div",{class:"vc-l "+(cls||"")},
+        el("div",{class:"vc-n"},el("b",{text:nome}),el("small",{text:`${int(r.lpv)} visitas → ${int(r.ic||0)} checkouts`})),
+        el("div",{class:"vc-bar"},el("i",{class:tn,style:`width:${(t/esc*100).toFixed(1)}%`}),el("u",{style:`left:${(META_F.chk/esc*100).toFixed(1)}%`,title:"meta 12%"})),
+        el("b",{class:"num vc-t "+tn,text:pct(t,1)}));};
+    d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Visita → checkout por página"}),el("small",{text:"checkouts iniciados ÷ visitas na página, pelo Meta · linha = meta 12%"})),
+      el("div",{class:"vc"},...vp.map(r=>linhaVC(r.nome.replace(/^turnemaquinadevendas\.com\.br/,""),r)),linhaVC("Total",pt,"tot"))));
+  }
 
   // melhores e piores criativos
   const OLHO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
