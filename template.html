@@ -259,6 +259,7 @@ table.raio-t{min-width:420px}
 .cmp small{color:var(--muted);font-size:12px}
 .cmp .capac-bar{margin-top:4px}
 .cmp.tot{border-color:var(--gold)}
+.cmp .cmp-de{font-style:normal;font-size:16px;font-weight:600;color:var(--muted)}
 .capac{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center;margin-top:14px;border:1px solid var(--line-soft);border-radius:12px;padding:16px 18px;background:rgba(var(--shade-rgb),.12)}
 .capac-l{display:flex;flex-direction:column;gap:4px;min-width:170px}
 .capac-l span{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -917,8 +918,8 @@ function painelComparecimento(c){
   if(emit<20||pres/emit<0.1) return aviso(`Sem leitura de check-in na portaria: ${int(pres)} presentes marcados de ${int(emit)} e-tickets.`);
   const tx=x=>x.emitidos?x.presentes/x.emitidos:null;
   const caixa=(nome,x,cls)=>el("div",{class:"cmp "+(cls||"")},
-    el("span",{text:nome}),el("b",{class:"num",text:pct(tx(x),0)}),
-    el("small",{text:`${int(x.presentes)} presentes de ${int(x.emitidos)} e-tickets`}),
+    el("span",{text:nome}),el("b",{class:"num"},document.createTextNode(int(x.presentes)+" "),el("em",{class:"cmp-de",text:"de "+int(x.emitidos)})),
+    el("small",{text:`presentes · ${pct(tx(x),0)} de comparecimento`}),
     el("div",{class:"capac-bar"},el("i",{style:`width:${((tx(x)||0)*100).toFixed(1)}%`})));
   const tp=tx(ck.pago), tc=tx(ck.cortesia), dif=tp!=null&&tc!=null?(tp-tc)*100:null;
   const cap=metaDe(c).ingressos;
