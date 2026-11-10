@@ -61,10 +61,13 @@ em.g{font-family:var(--f-display);font-style:italic;color:var(--gold);font-weigh
 @media (prefers-reduced-motion:reduce){.ticker div{animation:none}}
 
 /* abas */
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-block:24px 18px}
-.tab{appearance:none;border:1px solid var(--line);background:transparent;color:var(--fg);font:700 12px/1 var(--f-body);letter-spacing:.1em;text-transform:uppercase;padding:12px 16px;border-radius:10px;cursor:pointer}
-.tab[aria-pressed="true"]{background:linear-gradient(180deg,var(--gold-2),var(--gold));color:var(--gold-ink);border-color:transparent}
-:root[data-theme="light"] .tab[aria-pressed="true"]{color:#fff}
+.tabs{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-block:24px 18px}
+.tabs label{font:600 15px/1 var(--f-body);color:var(--muted)}
+.selwrap{position:relative;display:inline-block}
+.selwrap::after{content:"";position:absolute;right:16px;top:50%;width:7px;height:7px;border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.tabsel{appearance:none;-webkit-appearance:none;border:1.5px solid var(--gold);background:transparent;color:var(--fg);font:600 15px/1 var(--f-body);padding:12px 44px 12px 20px;border-radius:999px;cursor:pointer;min-width:210px}
+.tabsel option{background:var(--panel,#0f2117);color:var(--fg);text-transform:none;letter-spacing:0}
+.tabsel:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .tab:focus-visible,.city:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 /* resumo da rota */
@@ -368,13 +371,18 @@ DATA.cidades.forEach(c => c.k = calc(c));
 const tone = (v, meta, lowerBetter=true) => v==null ? "" : (lowerBetter ? (v<=meta?"ok":v<=meta*1.25?"warn":"bad") : (v>=meta?"ok":v>=meta*.8?"warn":"bad"));
 const tlabel = t => ({ok:"dentro da meta",warn:"perto da meta",bad:"acima da meta"})[t]||"";
 
-let rota = "ativas", sel = null;
+const cicloDe=c=>c.ciclo??c.rota;
+const naAba=(c,id)=>String(cicloDe(c))===id;
+// ciclo atual = o mais antigo que ainda tem praça por acontecer (senão, o mais recente)
+const CICLOS=[...new Set(DATA.cidades.map(cicloDe).filter(Boolean))].sort((a,b)=>b-a);
+const _vivos=DATA.cidades.filter(c=>c.k.dRest>=0).map(cicloDe).filter(Boolean);
+const ATUAL=String(_vivos.length?Math.min(..._vivos):CICLOS[0]);
+let sel = null;
+try { const h=location.hash.slice(1); if(h) sel=h; } catch(e){}
 if(sel && !DATA.cidades.some(c=>c.code===sel)){ // link antigo (#PELOTAS) → evento atual da cidade
   const m=DATA.cidades.filter(c=>c.code.startsWith(sel+"-")); sel=(m.find(c=>c.k.dRest>=0)||m[m.length-1]||{}).code||null; }
-if(sel){ const c=DATA.cidades.find(x=>x.code===sel); if(c && c.k.dRest<0) rota=String(cicloDe(c)); }
-const cicloDe=c=>c.ciclo??c.rota;
-const naAba=(c,id)=>id==="todas"||(id==="ativas"?c.k.dRest>=0:String(cicloDe(c))===id);
-try { const h=location.hash.slice(1); if(h) sel=h; } catch(e){}
+let rota = ATUAL;
+if(sel){ const c=DATA.cidades.find(x=>x.code===sel); if(c) rota=String(cicloDe(c)); }
 
 function dchip(c){
   const d=c.k.dRest;
@@ -382,13 +390,13 @@ function dchip(c){
 }
 
 function renderTabs(){
-  const t=document.getElementById("tabs"); t.replaceChildren();
-  const ciclos=[...new Set(DATA.cidades.map(cicloDe).filter(Boolean))].sort((a,b)=>b-a);
-  [["ativas","Em andamento"],["todas","Todas de 2026"],...ciclos.map(r=>[String(r),"Ciclo "+r])].forEach(([id,lab])=>{
-    const n = DATA.cidades.filter(c=>naAba(c,id)).length;
-    const b=el("button",{class:"tab",type:"button","aria-pressed":String(rota===id),text:`${lab} · ${n}`});
-    b.onclick=()=>{rota=id; render();}; t.append(b);
+  const t=document.getElementById("tabs");
+  const ops=CICLOS.map(r=>[String(r),"RGV "+r+(String(r)===ATUAL?" · atual":"")]).map(([id,lab])=>{
+    return el("option",{value:id,text:lab});
   });
+  const sel=el("select",{class:"tabsel",id:"tabsel"},...ops); sel.value=rota;
+  sel.onchange=()=>{rota=sel.value; render();};
+  t.replaceChildren(el("label",{for:"tabsel",text:"Ciclo"}),el("span",{class:"selwrap"},sel));
 }
 
 function renderSum(list){
