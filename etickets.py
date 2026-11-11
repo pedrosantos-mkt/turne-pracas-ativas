@@ -14,7 +14,7 @@ alvo = [c for c in d['cidades'] if c.get('checkin_v') != VERSAO and dt.date.from
 def pagina(cur):
   for t in range(10):
     r = requests.get(URL, headers=H, params={'cursor': cur} if cur else {}, timeout=(10, 60))
-    if r.status_code == 429: time.sleep(min(120, 10 * (t + 1))); continue
+    if r.status_code == 429 or r.status_code >= 500: time.sleep(min(120, 10 * (t + 1))); continue
     if r.status_code != 200: raise SystemExit(f'Guru e-tickets: {r.status_code}')
     return r.json()
   raise SystemExit('Guru e-tickets: sem resposta')
