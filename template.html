@@ -947,10 +947,10 @@ function painelDebriefing(c){
   const grupo=(t,...ks)=>el("div",{class:"dbf-g"},el("h5",{text:t}),el("div",{class:"kpis"},...ks));
   const ev=pl&&pl.evento, dp=pl&&pl.depois;
   const vendasBox = ev&&ev.vendas ? [
-      kpi("Vendas no evento",int(ev.vendas),"canal MDV na planilha comercial"),
-      kpi("Cadeiras",int(ev.cadeiras),"coluna D"),
-      kpi("Ticket médio",brl(div(ev.receita,ev.vendas)),"receita ÷ vendas (coluna E)"),
-      kpi("Receita RGV",brl(ev.receita),"soma da coluna E",true),
+      kpi("Vendas no evento",int(ev.vendas),""),
+      kpi("Cadeiras",int(ev.cadeiras),""),
+      kpi("Ticket médio",brl(div(ev.receita,ev.vendas)),"receita ÷ vendas"),
+      kpi("Receita RGV",brl(ev.receita),"",true),
       kpi("ROAS RGV",div(ev.receita,k.spend)==null?"—":div(ev.receita,k.spend).toLocaleString("pt-BR",{maximumFractionDigits:1})+"x","receita RGV ÷ investimento em mídia"),
       kpi("CAC da venda",brl(div(k.spend,ev.vendas)),"investimento ÷ vendas no evento"),
       kpi("Conversão do evento",pct(pres?ev.vendas/pres:null,1),pres?`vendas ÷ ${int(pres)} pessoas presentes`:"sem check-in lido"),
