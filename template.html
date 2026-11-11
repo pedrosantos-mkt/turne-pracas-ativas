@@ -110,10 +110,10 @@ em.g{font-family:var(--f-display);font-style:italic;color:var(--gold);font-weigh
 
 /* funil */
 /* funil em fluxo contínuo: cartões que afinam ligados por faixas curvas (desenhadas em SVG depois do layout) */
-.fx{container-type:inline-size;position:relative;display:flex;align-items:center;height:248px;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:16px;padding:0 16px}
+.fx{container-type:inline-size;position:relative;display:flex;align-items:center;height:268px;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:16px;padding:0 22px}
 .fx>svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .fx-ok{--c:var(--ok-rgb)} .fx-warn{--c:var(--warn-rgb)} .fx-bad{--c:var(--bad-rgb)} .fx-neu{--c:var(--ink-rgb)}
-.fx-st{position:relative;flex:1;min-width:0;border-radius:14px;background:linear-gradient(160deg,rgba(var(--c),.28),rgba(var(--c),.07));border:1px solid rgba(var(--c),.38);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:0 6px}
+.fx-st{position:relative;flex:1;min-width:0;border-radius:14px;background:linear-gradient(160deg,rgba(var(--c),.28),rgba(var(--c),.07));border:1px solid rgba(var(--c),.38);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;padding:0 8px}
 .fx-st.fx-neu{background:linear-gradient(160deg,rgba(var(--c),.11),rgba(var(--c),.03));border-color:rgba(var(--c),.15)}
 .fx-lb{font-size:clamp(9px,1cqi,10.5px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgb(var(--c));line-height:1.2}
 .fx-neu .fx-lb{color:var(--muted)}
@@ -124,7 +124,7 @@ em.g{font-family:var(--f-display);font-style:italic;color:var(--gold);font-weigh
 .fx-mm::before{content:"META";font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--muted)}
 .fx-mt{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:2px 6px;align-items:baseline;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:rgba(var(--ink-rgb),.06);border:1px solid rgba(var(--c),.6);border-radius:6px;padding:4px 8px}
 .fx-mt b{color:var(--fg);font-size:13px;letter-spacing:0}
-.fx-gap{flex:0 0 clamp(62px,7cqi,104px);position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.fx-gap{box-sizing:border-box;flex:0 0 clamp(80px,8.4cqi,124px);padding:0 8px;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
 .fx-pill{font-size:13px;font-weight:800;padding:5px 10px;border-radius:99px;border:1px solid rgba(var(--c),.6);color:rgb(var(--c));background:var(--panel);white-space:nowrap}
 .fx-gap.fx-neu .fx-pill{color:var(--fg)}
 .fx-rl{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);line-height:1.25}
@@ -776,17 +776,17 @@ function renderDetail(c){
   const metaIng=metaDe(c).ingressos, metaQ=metaDe(c).qual, cpm=c.bm.cpm??k.cpm, ctr=c.bm.ctr_link??k.ctr;
   const f=el("div",{class:"fx"});
   f.append(document.createElementNS("http://www.w3.org/2000/svg","svg"),
-    fxEtapa("Impressões",kfmt(k.imp),{t:tone(cpm,META_F.cpm),alt:200,cs:["CPM ",B(brl(cpm,2))],mm:"R$ 36"}),
+    fxEtapa("Impressões",kfmt(k.imp),{t:tone(cpm,META_F.cpm),alt:214,cs:["CPM ",B(brl(cpm,2))],mm:"R$ 36"}),
     fxPassagem(pct(ctr,2),"CTR link","1%",tone(ctr,META_F.ctr,false)),
-    fxEtapa("Cliques no link",int(k.clk),{alt:186,cs:["CPC ",B(brl(div(k.spend,k.clk),2))]}),
+    fxEtapa("Cliques no link",int(k.clk),{alt:200,cs:["CPC ",B(brl(div(k.spend,k.clk),2))]}),
     fxPassagem(pct(k.connect,0),"Connect","75%",tone(k.connect,META_F.connect,false)),
-    fxEtapa("Visitas LP",int(k.lpv),{alt:172,cs:["Custo/visita ",el("br"),B(brl(div(k.spend,k.lpv),2))]}),
+    fxEtapa("Visitas LP",int(k.lpv),{alt:188,cs:["Custo/visita ",el("br"),B(brl(div(k.spend,k.lpv),2))]}),
     fxPassagem(pct(k.chk,1),"Visita → checkout","12%",tone(k.chk,META_F.chk,false)),
-    fxEtapa("Checkouts",int(k.ic),{alt:160,cs:["Custo/checkout ",el("br"),B(brl(div(k.spend,k.ic)))]}),
+    fxEtapa("Checkouts",int(k.ic),{alt:176,cs:["Custo/checkout ",el("br"),B(brl(div(k.spend,k.ic)))]}),
     fxPassagem(pct(conv,0),"Conversão","40%",tone(conv,META_F.conv,false)),
-    fxEtapa("Ingressos",int(k.ing),{t:tone(k.ing,metaIng,false),alt:160,mt:[el("span",{},"meta ",B(int(metaIng))),el("span",{text:pct(div(k.ing,metaIng),0)})],cs:["CAC ",B(brl(k.cac))],mm:"R$ "+META.cac}),
+    fxEtapa("Ingressos",int(k.ing),{t:tone(k.ing,metaIng,false),alt:176,mt:[el("span",{},"meta ",B(int(metaIng))),el("span",{text:pct(div(k.ing,metaIng),0)})],cs:["CAC ",B(brl(k.cac))],mm:"R$ "+META.cac}),
     fxPassagem(pct(k.txq,0),"Qualificação","50%",tone(k.txq,META.qual,false)),
-    fxEtapa("Qualificados",int(k.qual),{t:tone(k.qual,metaQ,false),alt:160,mt:[el("span",{},"meta ",B(int(metaQ))),el("span",{text:pct(div(k.qual,metaQ),0)})],cs:["CAC qualif. ",B(brl(k.cacq))],mm:"R$ "+META.cacq}));
+    fxEtapa("Qualificados",int(k.qual),{t:tone(k.qual,metaQ,false),alt:176,mt:[el("span",{},"meta ",B(int(metaQ))),el("span",{text:pct(div(k.qual,metaQ),0)})],cs:["CAC qualif. ",B(brl(k.cacq))],mm:"R$ "+META.cacq}));
   const fxRedesenha=()=>fxFaixas(f); requestAnimationFrame(fxRedesenha); setTimeout(fxRedesenha,250); document.fonts&&document.fonts.ready.then(fxRedesenha);
   if(window.ResizeObserver) new ResizeObserver(fxRedesenha).observe(f);
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Funil da praça"}),el("small",{text:"Meta Ads até checkout; vendas, ingressos e qualificação pela Guru · conversão = vendas ÷ checkouts"})),f));
