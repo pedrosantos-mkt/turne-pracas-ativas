@@ -784,9 +784,9 @@ function renderDetail(c){
     fxPassagem(pct(k.chk,1),"Visita → checkout","12%",tone(k.chk,META_F.chk,false)),
     fxEtapa("Checkouts",int(k.ic),{alt:176,cs:["Custo/checkout ",el("br"),B(brl(div(k.spend,k.ic)))]}),
     fxPassagem(pct(conv,0),"Conversão","40%",tone(conv,META_F.conv,false)),
-    fxEtapa("Ingressos",int(k.ing),{t:tone(k.ing,metaIng,false),alt:176,mt:[el("span",{},"meta ",B(int(metaIng))),el("span",{text:pct(div(k.ing,metaIng),0)})],cs:["CAC ",B(brl(k.cac))],mm:"R$ "+META.cac}),
+    fxEtapa("Ingressos",int(k.ing),{t:tone(k.ing,metaIng,false),alt:176,mt:[el("span",{},"meta ",B(int(metaIng))),el("span",{text:pct(div(k.ing,metaIng),0)})]}),
     fxPassagem(pct(k.txq,0),"Qualificação","50%",tone(k.txq,META.qual,false)),
-    fxEtapa("Qualificados",int(k.qual),{t:tone(k.qual,metaQ,false),alt:176,mt:[el("span",{},"meta ",B(int(metaQ))),el("span",{text:pct(div(k.qual,metaQ),0)})],cs:["CAC qualif. ",B(brl(k.cacq))],mm:"R$ "+META.cacq}));
+    fxEtapa("Qualificados",int(k.qual),{t:tone(k.qual,metaQ,false),alt:176,mt:[el("span",{},"meta ",B(int(metaQ))),el("span",{text:pct(div(k.qual,metaQ),0)})]}));
   const fxRedesenha=()=>fxFaixas(f); requestAnimationFrame(fxRedesenha); setTimeout(fxRedesenha,250); document.fonts&&document.fonts.ready.then(fxRedesenha);
   if(window.ResizeObserver) new ResizeObserver(fxRedesenha).observe(f);
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Funil da praça"}),el("small",{text:"Meta Ads até checkout; vendas, ingressos e qualificação pela Guru · conversão = vendas ÷ checkouts"})),f));
