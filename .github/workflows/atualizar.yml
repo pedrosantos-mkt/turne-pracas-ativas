@@ -30,6 +30,7 @@ jobs:
           META_TOKEN: ${{ secrets.META_TOKEN }}
           GURU_TOKEN: ${{ secrets.GURU_TOKEN }}
           HUBSPOT_TOKEN: ${{ secrets.HUBSPOT_TOKEN }}
+          VENDAS_PLANILHA: ${{ secrets.VENDAS_PLANILHA }}
         run: ./atualizar.sh
       - name: Publicar na Vercel
         working-directory: site
