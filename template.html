@@ -930,15 +930,15 @@ const vchk=r=>r.lpv?(r.ic||0)/r.lpv:null;
   const tbd=el("tbody"), tot=[0,0,0,0,0,0,0,0,0];
   [...c.daily].reverse().forEach(r=>{
     const dd=dia(r); for(let i=1;i<10;i++) tot[i-1]+=(r[i]||0);
-    tbd.append(el("tr",{},el("td",{class:"num",text:dBR(r[0])}),el("td",{class:"num",text:brl(r[1])}),el("td",{class:"num",text:brl(r[10]??dd.cpm,2)}),el("td",{class:"num",text:pct(r[11]??dd.ctr,2)}),el("td",{class:"num",text:pct(r[12],2)}),el("td",{class:"num",text:pct(dd.connect,0)}),el("td",{class:"num",text:int(r[2])}),
+    tbd.append(el("tr",{},el("td",{class:"num",text:dBR(r[0])}),el("td",{class:"num",text:brl(r[1])}),el("td",{class:"num",text:brl(r[10]??dd.cpm,2)}),el("td",{class:"num",text:pct(r[11]??dd.ctr,2)}),el("td",{class:"num",text:pct(dd.connect,0)}),el("td",{class:"num",text:int(r[2])}),
       el("td",{class:"num",text:int(r[3])}),el("td",{class:"num",text:pct(dd.txq,0)}),el("td",{class:"num",text:brl(dd.cpa)}),el("td",{class:"num",text:brl(dd.cpaq)}),el("td",{class:"num",text:brl(dd.ticket)})));
   });
   const T=dia(["",...tot]);
-  d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Dia a dia"}),el("small",{text:"mais recente primeiro · CPM e CTR do Gerenciador de Anúncios · connect = visitas ÷ cliques no link · CPA = investimento ÷ ingressos pagos"})),
+  d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Dia a dia"}),el("small",{text:"mais recente primeiro · CPM e CTR link do Gerenciador de Anúncios · connect = visitas ÷ cliques no link · CPA = investimento ÷ ingressos pagos"})),
     el("div",{class:"tw daily"},el("table",{},
-      el("thead",{},el("tr",{},...["Dia","Investimento","CPM","CTR link","CTR todos","Connect","Ingressos","Qualificados","% qualif.","CPA","CPA qualif.","Ticket médio"].map(h=>el("th",{text:h})))),
+      el("thead",{},el("tr",{},...["Dia","Investimento","CPM","CTR link","Connect","Ingressos","Qualificados","% qualif.","CPA","CPA qualif.","Ticket médio"].map(h=>el("th",{text:h})))),
       tbd,
-      el("tfoot",{},el("tr",{},el("td",{text:"Total"}),el("td",{class:"num",text:brl(tot[0])}),el("td",{class:"num",text:brl(c.bm.cpm??T.cpm,2)}),el("td",{class:"num",text:pct(c.bm.ctr_link??T.ctr,2)}),el("td",{class:"num",text:pct(c.bm.ctr_all,2)}),el("td",{class:"num",text:pct(T.connect,0)}),el("td",{class:"num",text:int(tot[1])}),el("td",{class:"num",text:int(tot[2])}),
+      el("tfoot",{},el("tr",{},el("td",{text:"Total"}),el("td",{class:"num",text:brl(tot[0])}),el("td",{class:"num",text:brl(c.bm.cpm??T.cpm,2)}),el("td",{class:"num",text:pct(c.bm.ctr_link??T.ctr,2)}),el("td",{class:"num",text:pct(T.connect,0)}),el("td",{class:"num",text:int(tot[1])}),el("td",{class:"num",text:int(tot[2])}),
         el("td",{class:"num",text:pct(T.txq,0)}),el("td",{class:"num",text:brl(T.cpa)}),el("td",{class:"num",text:brl(T.cpaq)}),el("td",{class:"num",text:brl(T.ticket)})))))));
 
   // campanhas
