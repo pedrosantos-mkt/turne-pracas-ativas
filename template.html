@@ -109,19 +109,26 @@ em.g{font-family:var(--f-display);font-style:italic;color:var(--gold);font-weigh
 .sec-t small{color:var(--faint);font-size:12px}
 
 /* funil */
-.funnel{display:grid;grid-template-columns:repeat(5,minmax(0,1fr) 74px) minmax(0,1fr);align-items:stretch}
-.stage{min-width:0;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:12px;padding:12px 10px;display:flex;flex-direction:column;gap:5px}
-.stage.key{border-color:var(--gold);background:linear-gradient(180deg,rgba(var(--gold-rgb),.12),var(--panel-2))}
-.stage span{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);line-height:1.25}
-.stage b{font-size:clamp(16px,1.7vw,20px);font-weight:700;letter-spacing:-.02em;white-space:nowrap}
-.stage small{font-size:11px;color:var(--faint)}
-.rate{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;padding-inline:2px}
-.rate b{font-size:12.5px;font-weight:800;color:var(--gold);white-space:nowrap}
-.rate span{font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);line-height:1.2}
-.rate::before{content:"→";color:var(--faint);font-size:14px}
-.rate .num.ok{color:var(--ok)} .rate .num.warn{color:var(--warn)} .rate .num.bad{color:var(--bad)}
-.meta-f{font-size:10px;color:var(--faint);line-height:1.3}
-.stage .meta-f.ok{color:var(--ok)} .stage .meta-f.warn{color:var(--warn)} .stage .meta-f.bad{color:var(--bad)}
+.funnel{display:grid;grid-template-columns:repeat(5,minmax(0,1fr) 86px) minmax(0,1fr);align-items:start;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:16px;padding:18px 16px}
+.stage,.rate{min-width:0;display:flex;flex-direction:column}
+.st-h{height:58px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;padding:0 6px}
+.stage span{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);line-height:1.2}
+.stage b{font-size:clamp(18px,1.9vw,24px);font-weight:700;letter-spacing:-.02em;white-space:nowrap;line-height:1.1}
+.stage.key b{color:var(--gold)}
+.vol{height:72px;margin-top:10px;position:relative}
+.vol i{position:absolute;inset:0;background:rgba(var(--gold-rgb),.38)}
+.stage .vol i{clip-path:inset(calc(31px*(1 - var(--s))) 0 calc(31px*(1 - var(--s))) 0)}
+.stage.key .vol i{background:rgba(var(--gold-rgb),.75)}
+.rate .vol i{background:rgba(var(--gold-rgb),.2);clip-path:polygon(0 calc(31px*(1 - var(--a))),100% calc(31px*(1 - var(--b))),100% calc(100% - 31px*(1 - var(--b))),0 calc(100% - 31px*(1 - var(--a))))}
+.rate .vol b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:12.5px;font-weight:800;white-space:nowrap;padding:5px 9px;border-radius:99px;background:var(--panel);border:1px solid var(--line);color:var(--fg)}
+.rate .vol b.ok{color:var(--ok);border-color:rgba(var(--ok-rgb),.5)} .rate .vol b.warn{color:var(--warn);border-color:var(--warn)} .rate .vol b.bad{color:var(--bad);border-color:var(--bad)}
+.st-f{display:flex;flex-direction:column;gap:3px;padding:10px 6px 0}
+.stage .st-f small{font-size:11.5px;color:var(--muted);line-height:1.35}
+.rate .st-f{align-items:center;text-align:center;padding-inline:2px}
+.rate span{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);line-height:1.2}
+.meta-f{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--faint);line-height:1.3}
+.stage .meta-f::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--faint);flex:0 0 7px}
+.stage .meta-f.ok::before{background:var(--ok)} .stage .meta-f.warn::before{background:var(--warn)} .stage .meta-f.bad::before{background:var(--bad)}
 .cre-nome{display:flex;align-items:center;gap:10px;min-width:0}
 .cre-nome img{width:36px;height:36px;border-radius:6px;object-fit:cover;flex:0 0 36px;background:var(--line-soft)}
 .cre-nome span{min-width:0;overflow-wrap:anywhere}
@@ -130,11 +137,15 @@ em.g{font-family:var(--f-display);font-style:italic;color:var(--gold);font-weigh
 .ver:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .ver svg{width:15px;height:15px}
 @media (max-width:820px){
-  .funnel{grid-template-columns:1fr}
-  .stage{flex-direction:row;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
-  .stage span{flex:1 1 auto}
-  .rate{flex-direction:row;justify-content:center;gap:8px;padding-block:6px}
-  .rate::before{content:"↓"}
+  .funnel{grid-template-columns:1fr;padding:14px}
+  .st-h{height:auto;flex-direction:row;justify-content:space-between;align-items:baseline}
+  .vol{height:12px;margin-top:6px}
+  .stage .vol i{clip-path:none;right:auto;width:calc(12% + 88%*var(--s));border-radius:6px}
+  .rate .vol{height:auto;margin:0}
+  .rate .vol i{display:none}
+  .rate .vol b{position:static;transform:none}
+  .rate{flex-direction:row;align-items:center;gap:10px;padding:10px 0 10px 8px;border-left:1px solid var(--line);margin-left:6px}
+  .rate .st-f{flex-direction:row;gap:8px;padding:0;align-items:baseline}
 }
 
 /* kpis */
@@ -381,8 +392,8 @@ function calc(c){
     spend:m.spend||0, imp:m.imp||0, clk:m.clk||0, lpv:m.lpv||0, ic:m.ic||0, pur:m.pur||0,
     ing, vendas:g.vendas||0, rec:g.rec||0, cort:g.cort||0, vip:g.vip||0, vipVendas:g.vip_vendas||0, qual, desq, semcp:g.semcp||0, cls,
     cpm: div(m.spend*1000,m.imp), ctr: div(m.clk,m.imp), connect: div(m.lpv,m.clk), chk: div(m.ic,m.lpv), conv: div(ing,m.lpv),
-    cac: div(m.spend,ing), txq: div(qual,cls), qualEst: cls? (g.vendas||0)*qual/cls : null,
-    cacq: cls&&qual ? m.spend/(ing*qual/cls) : null, ticket: div(g.rec,g.vendas), roas: div(g.rec,m.spend),
+    cac: div(m.spend,ing), txq: div(qual,g.vendas), qualEst: qual,   // qualificado = CP2/CP3 contado; venda sem CP não conta como qualificada
+    cacq: qual ? m.spend/qual : null, ticket: div(g.rec,g.vendas), roas: div(g.rec,m.spend),
     diasCorr, dRest: daysTo(c.evento), pacing: ing/diasCorr, gastoDia: (m.spend||0)/diasCorr
   };
 }
@@ -420,8 +431,8 @@ function renderTabs(){
 }
 
 function renderSum(list){
-  const s=list.reduce((a,c)=>{for(const k of ["spend","ing","rec","qual","desq","cort"]) a[k]+=c.k[k]; if(c.k.cls){a.qe+=c.k.qualEst; a.sq+=c.k.spend;} return a;},{spend:0,ing:0,rec:0,qual:0,desq:0,cort:0,qe:0,sq:0});
-  const txq=div(s.qual,s.qual+s.desq), cac=div(s.spend,s.ing), cacq=div(s.sq,s.qe), semCP=list.filter(c=>!c.k.cls).length;
+  const s=list.reduce((a,c)=>{for(const k of ["spend","ing","rec","qual","desq","cort","vendas"]) a[k]+=c.k[k]; return a;},{spend:0,ing:0,rec:0,qual:0,desq:0,cort:0,vendas:0});
+  const txq=div(s.qual,s.vendas), cac=div(s.spend,s.ing), cacq=s.qual?div(s.spend,s.qual):null, semCP=0;
   const items=[
     ["Praças", int(list.length), (()=>{const e=list.filter(c=>c.k.dRest<0).length; return e? `${list.length-e} em andamento · ${e} encerrada${e===1?"":"s"}` : "em andamento";})()],
     ["Investimento", brl(s.spend), "Meta Ads acumulado"],
@@ -445,11 +456,11 @@ function qbar(k){
 
 // linha diária: [dia, investimento, ingressos, qualificados, desqualificados, receita, vendas, cliques, visitas, impressões, CPM, CTR link, CTR todos (os três últimos prontos do Meta)]
 function dia(r){
-  const cls=r[3]+r[4], txq=div(r[3],cls), qe=cls? r[6]*r[3]/cls : 0;
-  return {txq, cpa:div(r[1],r[2]), cpaq: r[3]? r[1]/qe : null, ticket:div(r[5],r[6]), connect:div(r[8],r[7]), cpm:div(r[1]*1000,r[9]), ctr:div(r[7],r[9])};
+  const txq=div(r[3],r[6]);
+  return {txq, cpa:div(r[1],r[2]), cpaq: r[3]? r[1]/r[3] : null, ticket:div(r[5],r[6]), connect:div(r[8],r[7]), cpm:div(r[1]*1000,r[9]), ctr:div(r[7],r[9])};
 }
-function stage(lab,val,sub,key,meta,t){ return el("div",{class:"stage"+(key?" key":"")},el("span",{text:lab}),el("b",{class:"num",text:val}),el("small",{text:sub||""}),meta?el("small",{class:"meta-f "+(t||""),text:meta}):null); }
-function rate(v,lab,meta,t){ return el("div",{class:"rate"},el("b",{class:"num "+(t||""),text:v}),el("span",{text:lab}),meta?el("small",{class:"meta-f",text:meta}):null); }
+function stage(lab,val,sub,key,meta,t,esc){ return el("div",{class:"stage"+(key?" key":"")},el("div",{class:"st-h"},el("span",{text:lab}),el("b",{class:"num",text:val})),el("div",{class:"vol","aria-hidden":"true"},el("i",{style:`--s:${(esc??0).toFixed(3)}`})),el("div",{class:"st-f"},sub?el("small",{text:sub}):null,meta?el("small",{class:"meta-f "+(t||""),text:meta}):null)); }
+function rate(v,lab,meta,t,a,bb){ return el("div",{class:"rate"},el("div",{class:"st-h"}),el("div",{class:"vol"},el("i",{"aria-hidden":"true",style:`--a:${(a??0).toFixed(3)};--b:${(bb??0).toFixed(3)}`}),el("b",{class:"num "+(t||""),text:v})),el("div",{class:"st-f"},el("span",{text:lab}),meta?el("small",{class:"meta-f",text:meta}):null)); }
 function kpi(lab,val,sub,cls){ return el("div",{class:"kpi"+(cls?" hl":"")},el("b",{class:"num",text:val}),el("span",{text:lab}),el("small",{text:sub})); }
 
 
@@ -754,18 +765,20 @@ function renderDetail(c){
 
   // funil
   const conv=div(k.vendas,k.ic), compraVisita=div(k.vendas,k.lpv);
+  const vols=[k.imp,k.clk,k.lpv,k.ic,k.ing,k.qualEst].map(v=>Math.max(1,v||0)), lmax=Math.log10(Math.max(...vols)), lmin=Math.log10(Math.min(...vols));
+  const esc=v=>lmax>lmin?(Math.log10(Math.max(1,v||0))-lmin)/(lmax-lmin):1;
   const f=el("div",{class:"funnel"},
-    stage("Impressões",kfmt(k.imp),"CPM "+brl(c.bm.cpm??k.cpm,2),false,"meta CPM R$ 36",tone(c.bm.cpm??k.cpm,META_F.cpm)),
-    rate(pct(c.bm.ctr_link??k.ctr,2),"CTR link","meta 1% · todos "+pct(c.bm.ctr_all,2),tone(c.bm.ctr_link??k.ctr,META_F.ctr,false)),
-    stage("Cliques no link",int(k.clk)),
-    rate(pct(k.connect,0),"Connect","meta 75%",tone(k.connect,META_F.connect,false)),
-    stage("Visitas LP",int(k.lpv)),
-    rate(pct(k.chk,1),"Visita → checkout","meta 12%",tone(k.chk,META_F.chk,false)),
-    stage("Checkouts",int(k.ic),"pixel"),
-    rate(pct(conv,0),"Conversão","meta 40%",tone(conv,META_F.conv,false)),
-    stage("Ingressos",int(k.ing),int(k.vendas)+" vendas · compra/visita "+pct(compraVisita,1),true,`meta ${metaDe(c).ingressos} ingressos · compra/visita 2,4%`,tone(k.ing,metaDe(c).ingressos,false)),
-    rate(pct(k.txq,0),"Qualificação","meta 50%",tone(k.txq,META.qual,false)),
-    stage("Qualificados",int(k.qualEst),"estimado",true));
+    stage("Impressões",kfmt(k.imp),"CPM "+brl(c.bm.cpm??k.cpm,2)+" · CTR todos "+pct(c.bm.ctr_all,2),false,"meta CPM R$ 36",tone(c.bm.cpm??k.cpm,META_F.cpm),esc(k.imp)),
+    rate(pct(c.bm.ctr_link??k.ctr,2),"CTR link","meta 1%",tone(c.bm.ctr_link??k.ctr,META_F.ctr,false),esc(k.imp),esc(k.clk)),
+    stage("Cliques no link",int(k.clk),"",false,null,null,esc(k.clk)),
+    rate(pct(k.connect,0),"Connect","meta 75%",tone(k.connect,META_F.connect,false),esc(k.clk),esc(k.lpv)),
+    stage("Visitas LP",int(k.lpv),"",false,null,null,esc(k.lpv)),
+    rate(pct(k.chk,1),"Visita → checkout","meta 12%",tone(k.chk,META_F.chk,false),esc(k.lpv),esc(k.ic)),
+    stage("Checkouts",int(k.ic),"pixel do Meta",false,null,null,esc(k.ic)),
+    rate(pct(conv,0),"Conversão","meta 40%",tone(conv,META_F.conv,false),esc(k.ic),esc(k.ing)),
+    stage("Ingressos",int(k.ing),int(k.vendas)+" vendas · compra/visita "+pct(compraVisita,1)+" (meta 2,4%)",true,`meta ${metaDe(c).ingressos} ingressos`,tone(k.ing,metaDe(c).ingressos,false),esc(k.ing)),
+    rate(pct(k.txq,0),"Qualificação","meta 50%",tone(k.txq,META.qual,false),esc(k.ing),esc(k.qualEst)),
+    stage("Qualificados",int(k.qual),k.semcp?`CP2/CP3 · ${int(k.semcp)} venda${k.semcp===1?"":"s"} sem CP fora`:"CP2/CP3",true,null,null,esc(k.qual)));
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Funil da praça"}),el("small",{text:"Meta Ads até checkout; vendas, ingressos e qualificação pela Guru · conversão = vendas ÷ checkouts"})),f));
 
   // kpis
@@ -793,7 +806,7 @@ function renderDetail(c){
           el("span",{},el("b",{class:"num",text:int(k.qual)})," qualificados"),
           el("span",{},el("b",{class:"num",text:int(k.desq)})," CP1"),
           k.semcp?el("span",{},el("b",{class:"num",text:int(k.semcp)})," sem CP na oferta"):null),
-        k.cls ? (()=>{const at=k.txq/META.qual, gap=META.qual-k.txq, falta=Math.max(0,Math.ceil(META.qual*k.cls-k.qual));
+        k.cls ? (()=>{const at=k.txq/META.qual, gap=META.qual-k.txq, falta=Math.max(0,Math.ceil(META.qual*k.vendas-k.qual));
           return el("div",{class:"goal"},
             el("div",{class:"goal-h"},el("span",{class:"cap",text:"Progresso até a meta de 50%"}),
               el("span",{class:"num "+t,text:pct(Math.min(at,9.99),0)+" da meta"})),
@@ -822,8 +835,8 @@ function renderDetail(c){
     hb, el("p",{class:"note",style:"margin-top:10px",text:"Cargo respondido no formulário do HubSpot, por venda paga. Barra = compradores do cargo; à direita, total, % das vendas e qualificação (CP2/CP3 sobre os que têm CP)."})));
 
   // público quente × frio e páginas
-  const rowCalc=r=>{const ing=r.ing||0,q=r.qual||0,dq=r.desq||0,cls=q+dq,sp=r.spend||0,tx=div(q,cls);
-    return {sp,ing,q,tx,cpa:sp?div(sp,ing):null,cacq:(tx&&sp)?sp/((r.vendas||ing)*tx):null,cpm:div(sp*1000,r.imp),ctr:div(r.clk,r.imp),connect:div(r.lpv,r.clk),conv:div(ing,r.lpv),cpc:div(sp,r.clk),imp:r.imp,clk:r.clk,lpv:r.lpv};};
+  const rowCalc=r=>{const ing=r.ing||0,q=r.qual||0,dq=r.desq||0,sp=r.spend||0,tx=div(q,r.vendas||(q+dq+(r.semcp||0)));
+    return {sp,ing,q,tx,cpa:sp?div(sp,ing):null,cacq:(q&&sp)?sp/q:null,cpm:div(sp*1000,r.imp),ctr:div(r.clk,r.imp),connect:div(r.lpv,r.clk),conv:div(ing,r.lpv),cpc:div(sp,r.clk),imp:r.imp,clk:r.clk,lpv:r.lpv};};
   const sumRows=rows=>rows.reduce((a,r)=>{for(const[k2,v]of Object.entries(r)) if(typeof v==="number") a[k2]=(a[k2]||0)+v; return a;},{});
   const money=v=>v?brl(v):"—";
   const cell=(t,cls)=>el("td",{class:"num"+(cls?" "+cls:""),text:t});
@@ -962,7 +975,7 @@ function painelDebriefing(c){
       kpi("Investimento",brl(k.spend),"Meta Ads da praça"),
       kpi("Ingressos vendidos",int(k.ing),`+ ${int(k.cort)} cortesias`),
       kpi("CAC do ingresso",brl(k.cac),"investimento ÷ ingressos vendidos"),
-      kpi("Qualificados",int(k.qual),`${pct(k.txq,0)} dos compradores (CP2/CP3)`)),
+      kpi("Qualificados",int(k.qual),`${pct(k.txq,0)} das vendas (CP2/CP3)`)),
     grupo("Evento",
       kpi("Pessoas presentes",int(pres),lido?`${int(ck.pago.presentes)} pagos + ${int(ck.cortesia.presentes)} cortesias`:"check-in não lido na portaria"),
       kpi("Comparecimento pago",pct(lido?tx(ck.pago):null,0),lido?`${int(ck.pago.presentes)} de ${int(ck.pago.emitidos)} e-tickets`:"—"),
