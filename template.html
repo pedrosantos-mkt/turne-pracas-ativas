@@ -752,8 +752,6 @@ function renderDetail(c){
             el("span",{},livre>=0?el("b",{class:"num",text:int(livre)}):el("b",{class:"num",style:"color:var(--gold)",text:int(-livre)}),livre>=0?" lugares livres":" acima da capacidade")),
           el("div",{class:"capac-bar"},el("i",{style:`width:${Math.min(100,oc*100).toFixed(1)}%`}))));})()));
 
-  const dbf=painelDebriefing(c); if(dbf) d.append(dbf);
-
   // funil
   const conv=div(k.vendas,k.ic), compraVisita=div(k.vendas,k.lpv);
   const f=el("div",{class:"funnel"},
@@ -936,6 +934,7 @@ const vchk=r=>r.lpv?(r.ic||0)/r.lpv:null;
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Campanhas da praça"}),el("small",{text:"ordenadas por investimento · ingressos pagos da Guru, ligados à campanha pela UTM do formulário que o comprador preencheu antes da compra"})),
     el("div",{class:"tw"},el("table",{},el("thead",{},el("tr",{},...["Campanha","Investimento","Visitas LP","Ingressos (Guru)","CPA","% da verba"].map(h=>el("th",{text:h})))),tb))));
   const pc=painelComparecimento(c); if(pc) d.append(pc);
+  const dbf=painelDebriefing(c); if(dbf) d.append(dbf);   // debriefing pós-evento por último, depois do comparecimento
 }
 
 // debriefing pós-evento: mídia e ingressos, evento (check-in) e vendas RGV da Planilha Comercial (coluna L = cidade)
