@@ -1,6 +1,6 @@
 # Comparecimento (check-in) de cada praça a partir do dia seguinte ao evento: e-tickets da Guru
 # pagos × cortesia. Fica guardado na praça (cache/pracas/) e não é buscado de novo.
-import requests, json, base64, time, datetime as dt, os, glob
+import requests, json, base64, time, datetime as dt, os, glob, re
 from pracas import GURU_TOKEN, NZ
 H = {'Authorization': 'Bearer ' + GURU_TOKEN(), 'Accept': 'application/json',
      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'}
@@ -8,8 +8,9 @@ URL = 'https://digitalmanager.guru/api/v2/etickets'
 d = json.load(open('data.json')); TODAS = json.load(open('raw/pracas_todas.json'))
 hoje = dt.date.today()
 JAN = 3   # data da campanha pode diferir 1 dia da data real do evento (Imperatriz, Pouso Alegre, Criciúma, Juiz de Fora)
-VERSAO = 3   # v3: e-ticket de venda R$ 0 dentro do produto pago conta como cortesia (pelo e-mail)
-alvo = [c for c in d['cidades'] if c.get('checkin_v') != VERSAO and dt.date.fromisoformat(c['evento']) <= hoje - dt.timedelta(days=1)]   # aparece no dia seguinte; refaz até a janela fechar
+VERSAO = 4   # v3: e-ticket de venda R$ 0 dentro do produto pago conta como cortesia (pelo e-mail) · v4: compradores qualificados presentes
+alvo = [c for c in d['cidades'] if c.get('checkin_v') != VERSAO and dt.date.fromisoformat(c['evento']) <= hoje - dt.timedelta(days=1)]
+if os.environ.get('SO'): alvo = [c for c in d['cidades'] if c['code'] in os.environ['SO'].split(',')]   # teste local de praças específicas   # aparece no dia seguinte; refaz até a janela fechar
 
 def pagina(cur):
   for t in range(10):
@@ -37,7 +38,7 @@ def janela(ev):
 # e-mails de cada praça com venda paga e com cortesia (oferta CORTESIA ou valor R$ 0, como no build.py):
 # a Guru emite o e-ticket da cortesia R$ 0 com o nome do produto pago, então o nome sozinho não separa
 from pracas import praca_da_venda
-EM = {}
+EM = {}; CP = {}
 for x in json.load(open('raw/guru.json')):
   if x['status'] != 'approved': continue
   cod = praca_da_venda(x); em = ((x.get('contact') or {}).get('email') or '').lower().strip()
@@ -45,6 +46,9 @@ for x in json.load(open('raw/guru.json')):
   P = NZ(x['product']['name']); O = NZ((x['product'].get('offer') or {}).get('name', '')) + '|' + NZ(x['items'][0]['name']) + '|' + NZ((x.get('checkout_url') or '').split('/pay/')[-1])
   cort = 'CORTESIA' in P or 'CORTESIA' in O or not (x['payment']['total'] or 0)
   EM.setdefault(cod, {'pago': set(), 'cortesia': set()})['cortesia' if cort else 'pago'].add(em)
+  if not cort:   # qualificação do comprador pelo CP da oferta (igual ao build.py): CP2/CP3 = qualificado, CP1 = desqualificado
+    cls = 'qual' if re.search(r'CP[23]', O) else 'desq' if 'CP1' in O else 'semcp'
+    CP.setdefault(cod, {'qual': set(), 'desq': set(), 'semcp': set()})[cls].add(em)
 
 cache_jan = {}
 for c in alvo:
@@ -64,12 +68,17 @@ for c in alvo:
   for dia, _, _ in minhas: dias[dia] = dias.get(dia, 0) + 1
   real = max(dias, key=dias.get) if dias else None
   r = {'pago': {'emitidos': 0, 'presentes': 0}, 'cortesia': {'emitidos': 0, 'presentes': 0}, 'cancelados': 0, 'data': real.isoformat() if real else None}
+  pres_em = set()
   for dia, e, P in minhas:
     if dia != real: continue
     if e.get('status') == 'canceled': r['cancelados'] += 1; continue
     em = (e.get('email') or '').lower().strip(); ems = EM.get(c['code'], {'pago': set(), 'cortesia': set()})
     t = 'cortesia' if 'CORTESIA' in P or (em in ems['cortesia'] and em not in ems['pago']) else 'pago'
     r[t]['emitidos'] += 1; r[t]['presentes'] += e.get('status') == 'checked_in'
+    if e.get('status') == 'checked_in': pres_em.add(em)
+  # compradores (um por e-mail) com check-in, por qualificação; o 2º ingresso do duplo em outro e-mail não entra aqui
+  cps = CP.get(c['code'], {'qual': set(), 'desq': set(), 'semcp': set()})
+  r['compradores'] = {k: {'total': len(v), 'presentes': len(v & pres_em)} for k, v in cps.items()}
   c['checkin'] = r if real else None
   if ev <= hoje - dt.timedelta(days=JAN + 1): c['checkin_v'] = VERSAO
   print(c['code'], r)

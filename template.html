@@ -969,6 +969,7 @@ function painelDebriefing(c){
   const tx=x=>x&&x.emitidos?x.presentes/x.emitidos:null;
   const grupo=(t,...ks)=>el("div",{class:"dbf-g"},el("h5",{text:t}),el("div",{class:"kpis"},...ks));
   const ev=pl&&pl.evento, dp=pl&&pl.depois;
+  const cpr=ck&&ck.compradores, salaC=cpr?cpr.qual.presentes+cpr.desq.presentes+cpr.semcp.presentes:0;
   const vendasBox = ev&&ev.vendas ? [
       kpi("Vendas no evento",int(ev.vendas),""),
       kpi("Cadeiras",int(ev.cadeiras),""),
@@ -991,10 +992,16 @@ function painelDebriefing(c){
       kpi("Comparecimento pago",pct(lido?tx(ck.pago):null,0),lido?`${int(ck.pago.presentes)} de ${int(ck.pago.emitidos)} e-tickets`:"—"),
       kpi("Comparecimento cortesia",pct(lido?tx(ck.cortesia):null,0),lido?`${int(ck.cortesia.presentes)} de ${int(ck.cortesia.emitidos)} e-tickets`:"—"),
       kpi("Ocupação",pct(pres!=null?pres/metaDe(c).ingressos:null,0),`presentes ÷ capacidade (${int(metaDe(c).ingressos)})`)),
+    lido&&cpr ? grupo("Compradores no evento",
+      kpi("Qualificados presentes",int(cpr.qual.presentes),`${int(cpr.qual.presentes)} de ${int(cpr.qual.total)} compradores CP2/CP3 · ${pct(div(cpr.qual.presentes,cpr.qual.total),0)}`,true),
+      kpi("CP1 presentes",int(cpr.desq.presentes),`${int(cpr.desq.presentes)} de ${int(cpr.desq.total)} compradores CP1 · ${pct(div(cpr.desq.presentes,cpr.desq.total),0)}`),
+      kpi("Qualificados na sala",pct(div(cpr.qual.presentes,salaC),0),`dos ${int(salaC)} compradores presentes`),
+      kpi("Vendas ÷ qualificados presentes",pct(ev&&ev.vendas&&cpr.qual.presentes?ev.vendas/cpr.qual.presentes:null,0),ev&&ev.vendas?`${int(ev.vendas)} vendas RGV`:"sem vendas na planilha")) : null,
     vendasBox ? grupo("Vendas RGV",...vendasBox)
       : !("planilha" in c) ? el("div",{class:"dbf-g"},el("h5",{text:"Vendas RGV"}),el("p",{class:"note",text:"Vendas da planilha comercial ainda não carregadas nesta atualização."}))
       : el("div",{class:"dbf-g"},el("h5",{text:"Vendas RGV"}),el("p",{class:"note",text: dp&&dp.vendas
           ? `Nenhuma venda no evento com esta cidade na coluna L; ${int(dp.vendas)} venda(s) depois do evento (resgate/outras ações), ${brl(dp.receita)}.`
+          : -k.dRest<=2 ? `Aguardando o lançamento das vendas na planilha comercial (confere até ${dBR(new Date(new Date(c.evento+"T12:00:00").getTime()+2*864e5).toISOString().slice(0,10))}).`
           : "Nenhuma venda com esta cidade na coluna L da planilha comercial (a cidade passou a ser anotada a partir do RGV 44)."})));
 }
 
