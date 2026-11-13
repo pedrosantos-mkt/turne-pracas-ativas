@@ -26,7 +26,9 @@ for g in filter(None, (x.strip() for x in txt.split(';'))):
   c = NZ(cid).replace(' ', '')
   if not c: continue
   dv = dt.date(int(ddmm[6:10]) if len(ddmm) >= 10 else ano, int(ddmm[3:5]), int(ddmm[:2])).isoformat()   # DD/MM/AAAA (Apps Script) ou DD/MM (resumo antigo)
-  evs = sorted((p for p in TODAS.values() if c in [p['cidade']] + p['aliases']), key=lambda p: p['evento'])
+  # cidade escrita livre na coluna L ("Balneário e Itajaí", "Juiz de fora"): vale o nome/apelido de praça mais longo contido nela
+  mel = max(((len(a), p['cidade']) for p in TODAS.values() for a in [p['cidade']] + p['aliases'] if a and a in c), default=None)
+  evs = sorted((p for p in TODAS.values() if mel and p['cidade'] == mel[1]), key=lambda p: p['evento'])
   if not evs: continue
   antes = [p for p in evs if p['evento'] <= dv]
   p = antes[-1] if antes else evs[0]
