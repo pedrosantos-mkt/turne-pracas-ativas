@@ -1001,7 +1001,7 @@ function painelDebriefing(c){
       : !("planilha" in c) ? el("div",{class:"dbf-g"},el("h5",{text:"Vendas RGV"}),el("p",{class:"note",text:"Vendas da planilha comercial ainda não carregadas nesta atualização."}))
       : el("div",{class:"dbf-g"},el("h5",{text:"Vendas RGV"}),el("p",{class:"note",text: dp&&dp.vendas
           ? `Nenhuma venda no evento com esta cidade na coluna L; ${int(dp.vendas)} venda(s) depois do evento (resgate/outras ações), ${brl(dp.receita)}.`
-          : -k.dRest<=2 ? `Aguardando o lançamento das vendas na planilha comercial (confere até ${dBR(new Date(new Date(c.evento+"T12:00:00").getTime()+2*864e5).toISOString().slice(0,10))}).`
+          : -k.dRest<=3 ? `Aguardando o lançamento das vendas na planilha comercial (confere até ${dBR(new Date(new Date(c.evento+"T12:00:00").getTime()+3*864e5).toISOString().slice(0,10))}).`
           : "Nenhuma venda com esta cidade na coluna L da planilha comercial (a cidade passou a ser anotada a partir do RGV 44)."})));
 }
 

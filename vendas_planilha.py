@@ -1,11 +1,23 @@
 # Vendas RGV da Planilha Comercial (aba Vendas): cidade na coluna L (Obs), cadeiras na D, valor na E.
 # A planilha é privada; o resumo por cidade chega pelo segredo VENDAS_PLANILHA (ou ~/.config/turne/vendas_planilha.txt).
-# Formato: CIDADE|E ou D|DD/MM da 1ª venda|vendas|cadeiras|receita em centenas de R$ ; ...
+# Formato: CIDADE|E ou D|DD/MM/AAAA (ou DD/MM da 1ª venda)|vendas|cadeiras|receita em centenas de R$ ; ...
 #   E = canal MDV (venda no evento) · D = resgate / outras ações depois do evento
 # Cada grupo vai para o evento daquela cidade mais recente até a data da venda.
 import json, os, datetime as dt
 from pracas import NZ
-txt = os.environ.get('VENDAS_PLANILHA') or (open(os.path.expanduser('~/.config/turne/vendas_planilha.txt')).read() if os.path.exists(os.path.expanduser('~/.config/turne/vendas_planilha.txt')) else '')
+import requests
+def da_planilha():
+  """resumo ao vivo pelo Apps Script da planilha (segredo VENDAS_URL); sem ele, o resumo guardado em VENDAS_PLANILHA"""
+  url = os.environ.get('VENDAS_URL')
+  if not url: return None
+  for t in range(4):
+    try:
+      r = requests.get(url, timeout=60)
+      if r.status_code == 200 and '|' in r.text and '<html' not in r.text[:200].lower(): return r.text
+      print('planilha respondeu', r.status_code)
+    except Exception as e: print('planilha:', e)
+  raise SystemExit('Apps Script da planilha não respondeu; nada é publicado nesta rodada')
+txt = da_planilha() or os.environ.get('VENDAS_PLANILHA') or (open(os.path.expanduser('~/.config/turne/vendas_planilha.txt')).read() if os.path.exists(os.path.expanduser('~/.config/turne/vendas_planilha.txt')) else '')
 d = json.load(open('data.json')); TODAS = json.load(open('raw/pracas_todas.json'))
 ano = dt.date.today().year
 out = {}
@@ -13,7 +25,7 @@ for g in filter(None, (x.strip() for x in txt.split(';'))):
   cid, tipo, ddmm, n, cad, rec = g.split('|')
   c = NZ(cid).replace(' ', '')
   if not c: continue
-  dv = dt.date(ano, int(ddmm[3:5]), int(ddmm[:2])).isoformat()
+  dv = dt.date(int(ddmm[6:10]) if len(ddmm) >= 10 else ano, int(ddmm[3:5]), int(ddmm[:2])).isoformat()   # DD/MM/AAAA (Apps Script) ou DD/MM (resumo antigo)
   evs = sorted((p for p in TODAS.values() if c in [p['cidade']] + p['aliases']), key=lambda p: p['evento'])
   if not evs: continue
   antes = [p for p in evs if p['evento'] <= dv]
