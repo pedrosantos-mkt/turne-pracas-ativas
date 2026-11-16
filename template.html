@@ -252,6 +252,8 @@ table.raio-t{min-width:420px}
 .cenario-k b{font-family:var(--f-display);font-size:30px;font-weight:400;line-height:1.1}
 .cenario-k small{font-size:12px;color:var(--muted)}
 .simples{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:14px}
+.simples.s5{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr)}
+.d-head .d-nota{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .simples>div{border:1px solid var(--line-soft);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;background:rgba(var(--shade-rgb),.12)}
 .simples>div.tot{border-color:var(--gold);background:var(--gold-soft)}
 .simples span{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -259,7 +261,7 @@ table.raio-t{min-width:420px}
 .simples .tot b{color:var(--gold)}
 .simples small{font-size:12px;color:var(--faint)}
 .simples .op{font-style:normal;font-size:26px;color:var(--faint);text-align:center}
-@media (max-width:640px){.simples{grid-template-columns:1fr}.simples .op{display:none}}
+@media (max-width:640px){.simples,.simples.s5{grid-template-columns:1fr}.simples .op{display:none}}
 .vc{display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .vc-l{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,3fr) 70px;gap:14px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft)}
 .vc-l:last-child{border-bottom:0}
@@ -548,14 +550,21 @@ function chart(c){
 // capacidade da praça = meta de ingressos (padrão 250); qualificados = 50% da meta
 const CAPACIDADE={"PELOTAS-1011":220, "CANOAS-1111":200, "BALNEARIOCAMBORIU-1211":300, "FOZDOIGUACU-1311":250, "CHAPECO-2311":250, "MONTESCLAROS-3011":200};
 const metaDe=c=>{const i=CAPACIDADE[c.code]??250; return {ingressos:i, qual:Math.round(i/2)};};
-const temCapacidade=c=>true;   // capacidade informada pelo usuário ou 250 por padrão
+const temCapacidade=c=>true;
+// praças com metas próprias de planejamento (BH 01/12: plano de R$ 400 mil = 1.000 ingressos vendidos a R$ 400, cortesias fora)
+const METAS_PRACA={"BELOHORIZONTE-0112":{ingressos:1000,qual:500,cac:400,cacq:800,cpm:58.90,ctr:.0054,connect:.69,chk:.081,conv:.49,
+  vendidos:true,tipos:true,comum:"Ingresso Duplo",nota:"Convocação Nacional · metas do planejamento de R$ 400 mil"}};
+const metasDe=c=>{const m=METAS_PRACA[c.code]||{}, cap=metaDe(c);
+  return {ingressos:m.ingressos??cap.ingressos,qual:m.qual??cap.qual,cac:m.cac??META.cac,cacq:m.cacq??META.cacq,cpm:m.cpm??META_F.cpm,ctr:m.ctr??META_F.ctr,
+    connect:m.connect??META_F.connect,chk:m.chk??META_F.chk,conv:m.conv??META_F.conv,vendidos:!!m.vendidos,tipos:!!m.tipos,comum:m.comum||"Ingresso",nota:m.nota||""};};
+const pctM=v=>(v*100).toLocaleString("pt-BR",{maximumFractionDigits:2})+"%";   // capacidade informada pelo usuário ou 250 por padrão
 // edição da cidade no ano (só quando a turnê passou mais de uma vez por ela)
 const EDICAO={}; (()=>{const g={}; DATA.cidades.forEach(c=>(g[c.code.split("-")[0]]??=[]).push(c));
   Object.values(g).forEach(l=>{ if(l.length>1) l.sort((a,b)=>a.evento.localeCompare(b.evento)).forEach((c,i)=>EDICAO[c.code]=i+1); });})();
 const edTxt=c=>EDICAO[c.code]?EDICAO[c.code]+"ª edição":"";
 const comEd=(t,c)=>edTxt(c)?t+" · "+edTxt(c):t;
 function painelRitmo(c){
-  const k=c.k, wrap=el("div",{}), META_RITMO=metaDe(c);
+  const k=c.k, wrap=el("div",{}), META_RITMO=metasDe(c);
   const diasAte=Math.round((new Date(c.evento+"T12:00:00")-HOJE)/864e5);
   wrap.append(el("div",{class:"sec-t"},el("h4",{text:"Ritmo até o evento"}),
     el("small",{text:diasAte<0?"evento realizado":`faltam ${diasAte} dia${diasAte===1?"":"s"} · ritmo atual = média dos últimos 7 dias, incluindo hoje`})));
@@ -615,7 +624,7 @@ function painelRitmo(c){
 }
 // vendas acumuladas, o caminho até a meta e a projeção no ritmo atual
 function ritmoGrafico(c,rest,ritmoV){
-  const META_RITMO=metaDe(c);
+  const META_RITMO=metasDe(c);
   const box=el("div",{class:"chart",style:"margin-top:14px"});
   const rows=c.daily; if(!rows.length) return box;
   // começa do que já tinha sido vendido antes do primeiro dia de campanha, para fechar no total da praça
@@ -752,42 +761,72 @@ function renderDetail(c){
   d.append(el("div",{class:"d-head"},
     el("div",{},el("span",{class:"cap",text:`Ciclo ${cicloDe(c)} · ${c.uf}`}),
       el("h2",{},document.createTextNode(c.nome+" "),el("em",{class:"g",text:"em "+dBR(c.evento)+(edTxt(c)?" · "+edTxt(c):"")})),
-      el("p",{text:`Campanha desde ${dBR(c.inicio)} · ${k.diasCorr} dias rodando · `+(dr===0?"evento hoje":dr>0?`faltam ${dr} dias`:"evento realizado")})),
+      el("p",{text:`Campanha desde ${dBR(c.inicio)} · ${k.diasCorr} dias rodando · `+(dr===0?"evento hoje":dr>0?`faltam ${dr} dias`:"evento realizado")}),
+      metasDe(c).nota?el("p",{class:"d-nota",text:metasDe(c).nota}):null),
     el("span",{class:"tag",text:c.camps.filter(x=>x.status==="ACTIVE").length+" campanhas ativas"})));
 
-  // visão simples: ingressos comuns + VIP (= vendidos) + cortesias = total de pessoas com ingresso
-  const comuns=k.ing-k.vip, vComuns=k.vendas-k.vipVendas;
-  d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Visão simples"}),el("small",{text:"vendas aprovadas na Guru · VIP = produto ou oferta com VIP no nome · cortesia = oferta de cortesia ou valor R$ 0"})),
-    el("div",{class:"simples"},
-      el("div",{},el("span",{text:"Ingressos vendidos"}),el("b",{class:"num",text:int(comuns)}),el("small",{text:`sem VIP · ${int(vComuns)} venda${vComuns===1?"":"s"}`})),
-      el("i",{class:"op","aria-hidden":"true",text:"+"}),
-      el("div",{},el("span",{text:"Ingressos VIP"}),el("b",{class:"num",text:int(k.vip)}),el("small",{text:k.vip?`${int(k.vipVendas)} venda${k.vipVendas===1?"":"s"} · vendidos com VIP: ${int(k.ing)}`:"nenhum VIP vendido"})),
-      el("i",{class:"op","aria-hidden":"true",text:"+"}),
-      el("div",{},el("span",{text:"Cortesias"}),el("b",{class:"num",text:int(k.cort)}),el("small",{text:"sem custo"})),
-      el("i",{class:"op","aria-hidden":"true",text:"="}),
-      el("div",{class:"tot"},el("span",{text:"Total com ingresso"}),el("b",{class:"num",text:int(k.ing+k.cort)}),el("small",{text:"pessoas esperadas no evento"}))),
-    !temCapacidade(c) ? null : (()=>{const cap=metaDe(c).ingressos, tot=k.ing+k.cort, oc=tot/cap, livre=cap-tot;
+  // visão simples: ingressos comuns + VIP (+ VIP Ouro nas praças com tipos) (= vendidos) + cortesias = total de pessoas com ingresso
+  const MV=metasDe(c), g=c.guru||{};
+  const ouro=MV.tipos?(g.t_ouro_ing||0):0, ouroV=MV.tipos?(g.t_ouro_vendas||0):0;
+  // com tipos, as três caixas vêm da mesma contagem da tabela "Tipos de ingresso" (fecham entre si)
+  const vip=MV.tipos?(g.t_vip_ing||0):k.vip, vipV=MV.tipos?(g.t_vip_vendas||0):k.vipVendas;
+  const comuns=MV.tipos?(g.t_comum_ing||0):k.ing-k.vip, vComuns=MV.tipos?(g.t_comum_vendas||0):k.vendas-k.vipVendas;
+  const op=t=>el("i",{class:"op","aria-hidden":"true",text:t});
+  const caixas=[
+    el("div",{},el("span",{text:"Ingressos vendidos"}),el("b",{class:"num",text:int(comuns)}),el("small",{text:`sem VIP · ${int(vComuns)} venda${vComuns===1?"":"s"}`})),op("+"),
+    el("div",{},el("span",{text:"Ingressos VIP"}),el("b",{class:"num",text:int(vip)}),el("small",{text:vip?`${int(vipV)} venda${vipV===1?"":"s"}`+(MV.tipos?` · ${brl(g.t_vip_rec||0)}`:` · vendidos com VIP: ${int(k.ing)}`):"nenhum VIP vendido"})),op("+"),
+    ...(MV.tipos?[el("div",{},el("span",{text:"VIP Ouro"}),el("b",{class:"num",text:int(ouro)}),el("small",{text:ouro?`${int(ouroV)} venda${ouroV===1?"":"s"} · ${brl(g.t_ouro_rec||0)}`:"nenhum Ouro vendido"})),op("+")]:[]),
+    el("div",{},el("span",{text:"Cortesias"}),el("b",{class:"num",text:int(k.cort)}),el("small",{text:"sem custo"})),op("="),
+    el("div",{class:"tot"},el("span",{text:"Total com ingresso"}),el("b",{class:"num",text:int(k.ing+k.cort)}),el("small",{text:"pessoas esperadas no evento"}))];
+  const faixaCap=()=>{const cap=metaDe(c).ingressos, tot=k.ing+k.cort, oc=tot/cap, livre=cap-tot;
       return el("div",{class:"capac"},
         el("div",{class:"capac-l"},el("span",{text:"Capacidade da cidade"}),el("b",{class:"num",text:int(cap)}),el("small",{text:"lugares no evento"})),
         el("div",{class:"capac-r"},
           el("div",{class:"capac-txt"},el("span",{},el("b",{class:"num",text:int(tot)})," ocupados · ",el("b",{class:"num",text:pct(oc,0)})),
             el("span",{},livre>=0?el("b",{class:"num",text:int(livre)}):el("b",{class:"num",style:"color:var(--gold)",text:int(-livre)}),livre>=0?" lugares livres":" acima da capacidade")),
-          el("div",{class:"capac-bar"},el("i",{style:`width:${Math.min(100,oc*100).toFixed(1)}%`}))));})()));
+          el("div",{class:"capac-bar"},el("i",{style:`width:${Math.min(100,oc*100).toFixed(1)}%`}))));};
+  // praças com meta de vendas do planejamento: a faixa compara só ingressos vendidos (cortesias fora)
+  const faixaMeta=()=>{const m=MV.ingressos, oc=k.ing/m, falta=m-k.ing;
+      return el("div",{class:"capac"},
+        el("div",{class:"capac-l"},el("span",{text:"Meta de ingressos vendidos"}),el("b",{class:"num",text:int(m)}),el("small",{text:`${brl(m*MV.cac)} a ${brl(MV.cac)} por ingresso · cortesias fora`})),
+        el("div",{class:"capac-r"},
+          el("div",{class:"capac-txt"},el("span",{},el("b",{class:"num",text:int(k.ing)})," vendidos · ",el("b",{class:"num",text:pct(oc,0)})),
+            el("span",{},el("b",{class:"num",style:falta<0?"color:var(--gold)":"",text:int(Math.abs(falta))}),falta>=0?" faltam para a meta":" acima da meta")),
+          el("div",{class:"capac-bar"},el("i",{style:`width:${Math.min(100,oc*100).toFixed(1)}%`}))));};
+  d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Visão simples"}),el("small",{text:MV.tipos?"vendas aprovadas na Guru · VIP Ouro = oferta Ingresso Ouro (checkout vip-black) · VIP = demais ofertas VIP · cortesia = oferta de cortesia ou valor R$ 0":"vendas aprovadas na Guru · VIP = produto ou oferta com VIP no nome · cortesia = oferta de cortesia ou valor R$ 0"})),
+    el("div",{class:"simples"+(MV.tipos?" s5":"")},...caixas),
+    MV.vendidos?faixaMeta():faixaCap()));
+
+  // tipos de ingresso (praças com tipos): investimento do Meta rateado pelo número de vendas de cada tipo
+  if(MV.tipos){
+    const T=[["comum",MV.comum],["vip","VIP"],["ouro","VIP Ouro"]].map(([id,nome])=>({nome,v:g[`t_${id}_vendas`]||0,i:g[`t_${id}_ing`]||0,r:g[`t_${id}_rec`]||0,q:g[`t_${id}_qual`]||0,dq:g[`t_${id}_desq`]||0})).filter(t=>t.v);
+    const tv=T.reduce((a,t)=>a+t.v,0)||1;
+    const linhaT=(t,cls)=>{const inv=k.spend*t.v/tv;
+      return el("tr",{class:cls||""},el("td",{text:t.nome}),...[int(t.v),int(t.i),brl(t.r),brl(div(t.r,t.v)),brl(inv)].map(x=>el("td",{class:"num",text:x})),
+        el("td",{class:"num "+tone(div(inv,t.i),MV.cac),text:brl(div(inv,t.i))}),el("td",{class:"num",text:pct(div(t.q,t.v),0)}),el("td",{class:"num",text:int(t.q)}),
+        el("td",{class:"num "+tone(t.q?inv/t.q:null,MV.cacq),text:brl(t.q?inv/t.q:null)}));};
+    const tot=T.reduce((a,t)=>({nome:"Total",v:a.v+t.v,i:a.i+t.i,r:a.r+t.r,q:a.q+t.q,dq:a.dq+t.dq}),{nome:"Total",v:0,i:0,r:0,q:0,dq:0});
+    d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Tipos de ingresso"}),el("small",{text:"vendas aprovadas na Guru · cortesias fora · investimento do Meta rateado pelo número de vendas de cada tipo, porque as mesmas campanhas vendem os três"})),
+      el("div",{class:"tw"},el("table",{class:"grid-t"},
+        el("thead",{},el("tr",{},...["Tipo","Vendas","Ingressos","Receita","Ticket médio","Investimento","CPA","Qualificação","Qualificados","CAC qualif."].map(h=>el("th",{text:h})))),
+        el("tbody",{},...T.map(t=>linhaT(t))),el("tfoot",{},linhaT(tot)))),
+      el("p",{class:"note",style:"margin-top:10px",text:`CPA = investimento rateado ÷ ingressos do tipo (meta ${brl(MV.cac)}). Qualificação = CP2/CP3 ÷ vendas do tipo (meta 50%). CAC qualif. = investimento rateado ÷ qualificados (meta ${brl(MV.cacq)}).`})));
+  }
 
   // funil
   const conv=div(k.vendas,k.ic), compraVisita=div(k.vendas,k.lpv);
   const B=t=>el("b",{text:t});
-  const metaIng=metaDe(c).ingressos, metaQ=metaDe(c).qual, cpm=c.bm.cpm??k.cpm, ctr=c.bm.ctr_link??k.ctr;
+  const MT=metasDe(c), metaIng=MT.ingressos, metaQ=MT.qual, cpm=c.bm.cpm??k.cpm, ctr=c.bm.ctr_link??k.ctr;
   const f=el("div",{class:"fx"});
   f.append(document.createElementNS("http://www.w3.org/2000/svg","svg"),
-    fxEtapa("Impressões",kfmt(k.imp),{t:tone(cpm,META_F.cpm),alt:214,cs:["CPM ",B(brl(cpm,2))],mm:"R$ 36"}),
-    fxPassagem(pct(ctr,2),"CTR link","1%",tone(ctr,META_F.ctr,false)),
+    fxEtapa("Impressões",kfmt(k.imp),{t:tone(cpm,MT.cpm),alt:214,cs:["CPM ",B(brl(cpm,2))],mm:brl(MT.cpm,MT.cpm%1?2:0)}),
+    fxPassagem(pct(ctr,2),"CTR link",pctM(MT.ctr),tone(ctr,MT.ctr,false)),
     fxEtapa("Cliques no link",int(k.clk),{alt:200,cs:["CPC ",B(brl(div(k.spend,k.clk),2))]}),
-    fxPassagem(pct(k.connect,0),"Connect","75%",tone(k.connect,META_F.connect,false)),
+    fxPassagem(pct(k.connect,0),"Connect",pctM(MT.connect),tone(k.connect,MT.connect,false)),
     fxEtapa("Visitas LP",int(k.lpv),{alt:188,cs:["Custo/visita ",el("br"),B(brl(div(k.spend,k.lpv),2))]}),
-    fxPassagem(pct(k.chk,1),"Visita → checkout","12%",tone(k.chk,META_F.chk,false)),
+    fxPassagem(pct(k.chk,1),"Visita → checkout",pctM(MT.chk),tone(k.chk,MT.chk,false)),
     fxEtapa("Checkouts",int(k.ic),{alt:176,cs:["Custo/checkout ",el("br"),B(brl(div(k.spend,k.ic)))]}),
-    fxPassagem(pct(conv,0),"Conversão","40%",tone(conv,META_F.conv,false)),
+    fxPassagem(pct(conv,0),"Conversão",pctM(MT.conv),tone(conv,MT.conv,false)),
     fxEtapa("Ingressos",int(k.ing),{t:tone(k.ing,metaIng,false),alt:176,mt:[el("span",{},"meta ",B(int(metaIng))),el("span",{text:pct(div(k.ing,metaIng),0)})]}),
     fxPassagem(pct(k.txq,0),"Qualificação","50%",tone(k.txq,META.qual,false)),
     fxEtapa("Qualificados",int(k.qual),{t:tone(k.qual,metaQ,false),alt:176,mt:[el("span",{},"meta ",B(int(metaQ))),el("span",{text:pct(div(k.qual,metaQ),0)})]}));
@@ -799,8 +838,8 @@ function renderDetail(c){
   d.append(el("div",{},el("div",{class:"sec-t"},el("h4",{text:"Resultado"})),
     el("div",{class:"kpis"},
       kpi("Investimento",brl(k.spend),brl(k.gastoDia)+" por dia em média"),
-      kpi("CAC de ingresso",brl(k.cac),"meta R$ 400 · "+tlabel(tone(k.cac,META.cac))),
-      kpi("CAC qualificado",brl(k.cacq),"meta R$ 800 · "+tlabel(tone(k.cacq,META.cacq)),true),
+      kpi("CAC de ingresso",brl(k.cac),"meta "+brl(MT.cac)+" · "+tlabel(tone(k.cac,MT.cac))),
+      kpi("CAC qualificado",brl(k.cacq),"meta "+brl(MT.cacq)+" · "+tlabel(tone(k.cacq,MT.cacq)),true),
       kpi("Ticket médio",brl(k.ticket),"por venda"),
       kpi("Receita de ingresso",brl(k.rec),"ROAS "+(k.roas||0).toLocaleString("pt-BR",{maximumFractionDigits:2})+"×"),
       kpi("Ritmo de ingressos",(k.pacing).toLocaleString("pt-BR",{maximumFractionDigits:1})+"/dia","média desde o início"),
@@ -1076,10 +1115,10 @@ function renderGrid(list){
       el("div",{class:"city-h"},
         el("div",{},el("h3",{text:c.nome}),el("p",{text:comEd(`${c.uf} · evento ${dBR(c.evento)} · Ciclo ${cicloDe(c)}`,c)})),
         dchip(c)),
-      (()=>{const cap=metaDe(c).ingressos, tot=k.ing+k.cort, oc=tot/cap;
+      (()=>{const mv=metasDe(c), cap=mv.vendidos?mv.ingressos:metaDe(c).ingressos, tot=mv.vendidos?k.ing:k.ing+k.cort, oc=tot/cap;
         return el("div",{class:"city-cap"},
-          el("div",{class:"city-cap-t"},el("span",{},"Capacidade ",el("b",{class:"num",text:int(cap)})),
-            el("span",{},el("b",{class:"num",style:oc>1?"color:var(--gold)":"",text:pct(oc,0)})," ocupado")),
+          el("div",{class:"city-cap-t"},el("span",{},mv.vendidos?"Meta de vendidos ":"Capacidade ",el("b",{class:"num",text:int(cap)})),
+            el("span",{},el("b",{class:"num",style:oc>1?"color:var(--gold)":"",text:pct(oc,0)}),metasDe(c).vendidos?" da meta":" ocupado")),
           el("div",{class:"capac-bar"},el("i",{style:`width:${Math.min(100,oc*100).toFixed(1)}%`})));})(),
       el("div",{class:"city-k"},
         el("div",{},el("span",{text:"Investimento"}),el("b",{class:"num",text:brl(k.spend)})),

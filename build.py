@@ -39,11 +39,15 @@ for code,pr in PR.items():
     if 'CORTESIA' in P or 'CORTESIA' in O or tot==0: s['cort']+=qty; continue
     s['ing']+=qty; s['vendas']+=1; s['rec']+=tot
     if 'VIP' in P or 'VIP' in O: s['vip']+=qty; s['vip_vendas']+=1  # VIP entra nos vendidos; separado só para exibir
+    # tipo do ingresso: Ouro = oferta "Ingresso Ouro" ou checkout vip-black; VIP = demais VIP; comum = o resto (duplo/simples)
+    tp='ouro' if ('OURO' in O or 'VIP-BLACK' in O or 'VIPBLACK' in O) else 'vip' if ('VIP' in P or 'VIP' in O) else 'comum'
+    s[f't_{tp}_vendas']+=1; s[f't_{tp}_ing']+=qty; s[f't_{tp}_rec']+=tot
     d=dt.datetime.fromtimestamp(x['dates']['confirmed_at']).date().isoformat(); daily[d][1]+=qty; daily[d][4]+=tot; daily[d][5]+=1
     cg=hs.get((x['contact'].get('email') or '').lower().strip(),{}).get('ti__form____cargo') or 'Sem resposta'
     if re.search(r'CP[23]',O): cls_='qual'; daily[d][2]+=1
     elif 'CP1' in O: cls_='desq'; daily[d][3]+=1
     else: cls_='semcp'
+    s[f't_{tp}_{cls_}']+=1
     s[cls_]+=1  # qualificação por comprador (venda), não por ingresso: o 2º ingresso do duplo não declarou faturamento
     cargos[cg][cls_]+=1; cargos[cg]['vendas']+=1
     cid_,fora_=CA['camp_of']((x['contact'].get('email') or '').lower().strip(),code,x['dates']['confirmed_at'],x.get('trackings'))
