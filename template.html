@@ -86,6 +86,10 @@ em.g{font-family:var(--f-display);font-style:italic;color:var(--gold);font-weigh
 .city-h p{margin:2px 0 0;font-size:12px;color:var(--muted)}
 .dchip{font-size:11px;font-weight:800;letter-spacing:.06em;padding:5px 8px;border-radius:999px;background:var(--gold-soft);color:var(--gold);white-space:nowrap}
 .dchip.hoje{background:var(--gold);color:var(--gold-ink)}
+.city-cap{display:flex;flex-direction:column;gap:6px}
+.city-cap-t{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.city-cap-t b{color:var(--fg);font-weight:700}
+.city-cap .capac-bar{height:6px}
 .city-k{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
 .city-k div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .city-k span{font-size:11px;color:var(--faint)}
@@ -1072,6 +1076,11 @@ function renderGrid(list){
       el("div",{class:"city-h"},
         el("div",{},el("h3",{text:c.nome}),el("p",{text:comEd(`${c.uf} · evento ${dBR(c.evento)} · Ciclo ${cicloDe(c)}`,c)})),
         dchip(c)),
+      (()=>{const cap=metaDe(c).ingressos, tot=k.ing+k.cort, oc=tot/cap;
+        return el("div",{class:"city-cap"},
+          el("div",{class:"city-cap-t"},el("span",{},"Capacidade ",el("b",{class:"num",text:int(cap)})),
+            el("span",{},el("b",{class:"num",style:oc>1?"color:var(--gold)":"",text:pct(oc,0)})," ocupado")),
+          el("div",{class:"capac-bar"},el("i",{style:`width:${Math.min(100,oc*100).toFixed(1)}%`})));})(),
       el("div",{class:"city-k"},
         el("div",{},el("span",{text:"Investimento"}),el("b",{class:"num",text:brl(k.spend)})),
         el("div",{},el("span",{text:"Ingressos (total)"}),el("b",{class:"num",text:int(k.ing+k.cort)}),el("small",{class:"city-sub",text:`${int(k.ing)} vendidos + ${int(k.cort)} cortesia${k.cort===1?"":"s"}`})),
