@@ -1,3 +1,4 @@
+from pracas import seguro
 # CTR e CPM do Gerenciador por criativo do ranking (soma dos anúncios com o mesmo nome), em lotes de 50 pedidos
 import requests, json, time
 from pracas import META_TOKEN
@@ -14,7 +15,7 @@ for i in range(0,len(alvo),50):
       resp=requests.post('https://graph.facebook.com/',data={'access_token':T,'batch':json.dumps(batch)},timeout=180).json()
       if isinstance(resp,dict) and 'error' in resp: print(resp['error'].get('message')); time.sleep(20*(a+1)); continue
       break
-    except Exception as e: print(e); time.sleep(10)
+    except Exception as e: print(seguro(e)); time.sleep(10)
   for r,x in zip(lote,resp if isinstance(resp,list) else []):
     try: dado=(json.loads(x['body']).get('data') or [{}])[0] if x and x.get('code')==200 else {}
     except Exception: dado={}

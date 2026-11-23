@@ -1,3 +1,4 @@
+from pracas import seguro
 # URL de destino e insights por anúncio (consulta única na conta, filtrada pelas campanhas das praças)
 import requests, json, time, collections
 from pracas import META_TOKEN
@@ -12,7 +13,7 @@ def get(path,p,base=None,tentativas=3):
         r=requests.get(url,params=p,timeout=120).json()
         if 'error' not in r: break
         print(r['error'].get('message')); time.sleep(10*(a+1))
-      except Exception as e: print(e); time.sleep(10); r={'error':str(e)}
+      except Exception as e: print(seguro(e)); time.sleep(10); r={'error':str(e)}
     if 'error' in r: return None
     out+=r.get('data',[]); url=r.get('paging',{}).get('next'); p=None
   return out

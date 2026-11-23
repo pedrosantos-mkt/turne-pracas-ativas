@@ -155,3 +155,8 @@ def praca_da_venda(x):
 def guru_da_praca(x, p):
   """A venda da Guru é desta praça (deste evento)?"""
   return praca_da_venda(x) == p['code']
+
+
+def seguro(e):
+  """mensagem de erro sem a query string da URL (onde vai o access_token) — os logs do Actions podem ser lidos"""
+  return re.sub(r'\?[^\s\'"]*', '?…', str(e))

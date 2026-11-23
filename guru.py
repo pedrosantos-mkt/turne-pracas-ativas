@@ -1,3 +1,4 @@
+from pracas import seguro
 import requests, json, os, time, datetime as dt
 from concurrent.futures import ThreadPoolExecutor
 from pracas import GURU_TOKEN
@@ -14,7 +15,7 @@ def slice_(a,b):
         r=requests.get('https://digitalmanager.guru/api/v2/transactions',headers=H,params=p,timeout=(10,60))
         if r.status_code==429 or r.status_code>=500: time.sleep(min(120,10*(t+1))); continue
         break
-      except Exception as e: print(e); time.sleep(5)
+      except Exception as e: print(seguro(e)); time.sleep(5)
     # sem resposta completa a coleta para (melhor não publicar do que publicar vendas faltando)
     if r is None or r.status_code!=200: raise SystemExit(f'Guru falhou em {a}: {r.status_code if r is not None else "sem resposta"}')
     j=r.json(); out+=j.get('data',[])

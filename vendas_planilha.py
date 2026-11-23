@@ -15,7 +15,7 @@ def da_planilha():
       r = requests.get(url, timeout=60)
       if r.status_code == 200 and '|' in r.text and '<html' not in r.text[:200].lower(): return r.text
       print('planilha respondeu', r.status_code)
-    except Exception as e: print('planilha:', e)
+    except Exception as e: print('planilha:', type(e).__name__)
   raise SystemExit('Apps Script da planilha não respondeu; nada é publicado nesta rodada')
 txt = da_planilha() or os.environ.get('VENDAS_PLANILHA') or (open(os.path.expanduser('~/.config/turne/vendas_planilha.txt')).read() if os.path.exists(os.path.expanduser('~/.config/turne/vendas_planilha.txt')) else '')
 d = json.load(open('data.json')); TODAS = json.load(open('raw/pracas_todas.json'))

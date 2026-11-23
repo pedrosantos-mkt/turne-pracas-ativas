@@ -1,3 +1,4 @@
+from pracas import seguro
 import requests, json, os, re, time
 from pracas import pracas, todas_pracas, META_TOKEN
 import glob
@@ -19,7 +20,7 @@ def get(cid,extra):
       if 'error' in r:
         print(cid,r['error'].get('message')); time.sleep(30*(a+1)); continue
       return r['data']
-    except Exception as e: print(e); time.sleep(10)
+    except Exception as e: print(seguro(e)); time.sleep(10)
 res={}
 for cid,(ci,c) in sel.items():
   res[cid]={'city':ci,'name':c['name'],'status':c['effective_status'],'start':c['start_time'],

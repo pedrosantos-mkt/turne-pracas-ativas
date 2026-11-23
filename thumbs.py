@@ -1,3 +1,4 @@
+from pracas import seguro
 # Miniatura dos criativos que podem entrar no ranking (busca por lotes de IDs, depois do quadros.py)
 import json, requests, time
 from pracas import META_TOKEN
@@ -12,7 +13,7 @@ for i in range(0,len(ids),40):
       if 'error' in r: print(r['error'].get('message')); time.sleep(15*(a+1)); continue
       for k,v in r.items(): thumb[k]=(v.get('creative') or {}).get('thumbnail_url')
       break
-    except Exception as e: print(e); time.sleep(10)
+    except Exception as e: print(seguro(e)); time.sleep(10)
 for r in alvo: r['thumb']=thumb.get(r['ad'])
 json.dump(d,open('data.json','w'),ensure_ascii=False)
 print(len(ids),'criativos,',sum(1 for v in thumb.values() if v),'miniaturas')
