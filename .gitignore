@@ -6,3 +6,7 @@ site/.vercel
 __pycache__/
 .DS_Store
 cache/
+analise-*
+prototipo-*
+*.png
+!logo.webp
