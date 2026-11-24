@@ -548,7 +548,7 @@ function chart(c){
 
 // ritmo: o que a praça está fazendo (média dos últimos 7 dias) × o que precisa fazer por dia até o evento
 // capacidade da praça = meta de ingressos (padrão 250); qualificados = 50% da meta
-const CAPACIDADE={"PELOTAS-1011":220, "CANOAS-1111":200, "BALNEARIOCAMBORIU-1211":300, "FOZDOIGUACU-1311":250, "CHAPECO-2311":250, "MONTESCLAROS-3011":200};
+const CAPACIDADE={"PELOTAS-1011":220, "CANOAS-1111":200, "BALNEARIOCAMBORIU-1211":300, "FOZDOIGUACU-1311":250, "CHAPECO-2311":250, "MONTESCLAROS-3011":200, "RECIFE-0212":300, "BARREIRAS-0312":300, "CAMPINAS-0712":300};
 const metaDe=c=>{const i=CAPACIDADE[c.code]??250; return {ingressos:i, qual:Math.round(i/2)};};
 const temCapacidade=c=>true;
 // praças com metas próprias de planejamento (BH 01/12: plano de R$ 400 mil = 1.000 ingressos vendidos a R$ 400, cortesias fora)
