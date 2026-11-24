@@ -85,6 +85,8 @@ em.g{font-family:var(--f-display);font-style:italic;color:var(--gold);font-weigh
 .city-h h3{margin:0;font-size:17px;font-weight:700;letter-spacing:-.01em}
 .city-h p{margin:2px 0 0;font-size:12px;color:var(--muted)}
 .dchip{font-size:11px;font-weight:800;letter-spacing:.06em;padding:5px 8px;border-radius:999px;background:var(--gold-soft);color:var(--gold);white-space:nowrap}
+.dchip.cancel{background:rgba(239,107,91,.16);color:var(--bad)}
+.city.cancelada{border-style:dashed}
 .dchip.hoje{background:var(--gold);color:var(--gold-ink)}
 .city-cap{display:flex;flex-direction:column;gap:6px}
 .city-cap-t{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
@@ -415,8 +417,12 @@ if(sel && !DATA.cidades.some(c=>c.code===sel)){ // link antigo (#PELOTAS) → ev
 let rota = ATUAL;
 if(sel){ const c=DATA.cidades.find(x=>x.code===sel); if(c) rota=String(cicloDe(c)); }
 
+// praças canceladas: continuam com todos os dados, só ganham a marcação
+const CANCELADAS={"PARAGUAI-0712":true};
+const cancelada=c=>!!CANCELADAS[c.code];
 function dchip(c){
   const d=c.k.dRest;
+  if(cancelada(c)) return el("span",{class:"dchip cancel",text:"CANCELADO"});
   return el("span",{class:"dchip"+(d===0?" hoje":""), text: d===0?"HOJE" : d<0? "ENCERRADO" : "D-"+d});
 }
 
@@ -434,7 +440,7 @@ function renderSum(list){
   const s=list.reduce((a,c)=>{for(const k of ["spend","ing","rec","qual","desq","cort","vendas"]) a[k]+=c.k[k]; return a;},{spend:0,ing:0,rec:0,qual:0,desq:0,cort:0,vendas:0});
   const txq=div(s.qual,s.vendas), cac=div(s.spend,s.ing), cacq=s.qual?div(s.spend,s.qual):null, semCP=0;
   const items=[
-    ["Praças", int(list.length), (()=>{const e=list.filter(c=>c.k.dRest<0).length; return e? `${list.length-e} em andamento · ${e} encerrada${e===1?"":"s"}` : "em andamento";})()],
+    ["Praças", int(list.length), (()=>{const x=list.filter(cancelada).length, e=list.filter(c=>c.k.dRest<0&&!cancelada(c)).length, a=list.length-e-x; return [a+" em andamento",e?`${e} encerrada${e===1?"":"s"}`:"",x?`${x} cancelada${x===1?"":"s"}`:""].filter(Boolean).join(" · ");})()],
     ["Investimento", brl(s.spend), "Meta Ads acumulado"],
     ["Ingressos pagos", int(s.ing), int(s.cort)+" cortesias à parte"],
     ["CAC de ingresso", brl(cac), "meta R$ 400", tone(cac,META.cac)],
@@ -763,9 +769,10 @@ function renderDetail(c){
   d.append(el("div",{class:"d-head"},
     el("div",{},el("span",{class:"cap",text:`Ciclo ${cicloDe(c)} · ${c.uf}`}),
       el("h2",{},document.createTextNode(c.nome+" "),el("em",{class:"g",text:"em "+dBR(c.evento)+(edTxt(c)?" · "+edTxt(c):"")})),
-      el("p",{text:`Campanha desde ${dBR(c.inicio)} · ${k.diasCorr} dias rodando · `+(dr===0?"evento hoje":dr>0?`faltam ${dr} dias`:"evento realizado")}),
+      el("p",{text:`Campanha desde ${dBR(c.inicio)} · ${k.diasCorr} dias rodando · `+(cancelada(c)?"evento cancelado":dr===0?"evento hoje":dr>0?`faltam ${dr} dias`:"evento realizado")}),
       metasDe(c).nota?el("p",{class:"d-nota",text:metasDe(c).nota}):null),
-    el("span",{class:"tag",text:c.camps.filter(x=>x.status==="ACTIVE").length+" campanhas ativas"})));
+    el("div",{style:"display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start"},cancelada(c)?el("span",{class:"tag",style:"color:var(--bad);border-color:var(--bad)",text:"Evento cancelado"}):null,
+      el("span",{class:"tag",text:c.camps.filter(x=>x.status==="ACTIVE").length+" campanhas ativas"}))));
 
   // visão simples: ingressos comuns + VIP (+ VIP Ouro nas praças com tipos) (= vendidos) + cortesias = total de pessoas com ingresso
   const MV=metasDe(c), g=c.guru||{};
@@ -1113,7 +1120,7 @@ function renderGrid(list){
   const g=document.getElementById("grid"); g.replaceChildren();
   list.forEach(c=>{
     const k=c.k, t=tone(k.cacq,META.cacq);
-    const b=el("button",{class:"city",type:"button","aria-current":String(sel===c.code)},
+    const b=el("button",{class:"city"+(cancelada(c)?" cancelada":""),type:"button","aria-current":String(sel===c.code)},
       el("div",{class:"city-h"},
         el("div",{},el("h3",{text:c.nome}),el("p",{text:comEd(`${c.uf} · evento ${dBR(c.evento)} · Ciclo ${cicloDe(c)}`,c)})),
         dchip(c)),
