@@ -589,7 +589,7 @@ function painelRitmo(c){
   ];
   const grid=el("div",{class:"ritmo-grid"});
   linhas.forEach(L=>{
-    const falta=Math.max(0,L.meta-L.atual), precisa=falta?Math.max(0,L.meta-L.base)/diasProj:0, proj=Math.max(L.atual,L.base+L.ritmo*diasProj);
+    const falta=Math.max(0,L.meta-L.atual), precisa=falta?Math.max(0,L.meta-L.base)/diasProj:0, proj=L.base+Math.max(L.atual-L.base,L.ritmo)+L.ritmo*diasAte;
     const ok=falta===0||L.ritmo>=precisa, perto=!ok&&L.ritmo>=precisa*.8, tom=ok?"ok":perto?"warn":"bad";
     const vezes=L.ritmo>0?precisa/L.ritmo:null;
     const card=el("div",{class:"ritmo-card"},
@@ -616,7 +616,9 @@ function painelRitmo(c){
   wrap.append(grid);
   // cenário: como a praça termina se mantiver a média dos últimos 7 dias
   const ingPorVenda=v7?i7/v7:(k.vendas?k.ing/k.vendas:1);
-  const vendasFim=Math.max(k.vendas,k.vendas-hojeV+ritmoV*diasProj), ingFim=Math.max(k.ing,k.ing-hojeI+ritmoI*diasProj), qualFim=Math.max(k.qual,k.qual-hojeQ+ritmoQ*diasProj), gastoFim=Math.max(k.spend,k.spend-hojeS+gastoDia*diasProj);
+  // hoje conta pelo maior: o que já entrou hoje ou a média de um dia
+  const fim=(tot,hj,r)=>tot-hj+Math.max(hj,r)+r*diasAte;
+  const vendasFim=fim(k.vendas,hojeV,ritmoV), ingFim=fim(k.ing,hojeI,ritmoI), qualFim=fim(k.qual,hojeQ,ritmoQ), gastoFim=fim(k.spend,hojeS,gastoDia);
   const cen=el("div",{class:"cenario"},
     el("div",{class:"cenario-t"},el("span",{class:"cap",text:"Cenário no ritmo atual"}),
       el("small",{text:`se mantiver a média dos últimos 7 dias completos, de hoje até ${dBR(c.evento)} · ${ingPorVenda.toLocaleString("pt-BR",{maximumFractionDigits:2})} ingresso por venda`})),
